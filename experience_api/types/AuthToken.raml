@@ -1,0 +1,24 @@
+#%RAML 1.0 DataType
+displayName: AuthToken
+type: object
+properties:
+  token:
+    type: string
+  expiresIn:
+    type: integer
+  user:
+    type: object
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      email:
+        type: string
+example:
+  token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  expiresIn: 86400
+  user:
+    id: 42
+    name: "João Silva"
+    email: "joao@example.com"

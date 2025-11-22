@@ -1,0 +1,12 @@
+[
+  {
+    "id": 1,
+    "name": "Miradouro da Vista do Rei",
+    "category": "miradouro",
+    "island": "São Miguel",
+    "latitude": 37.833,
+    "longitude": -25.797,
+    "address": "Sete Cidades, São Miguel",
+    "description": "Um dos locais mais emblemáticos dos Açores."
+  }
+]

@@ -1,0 +1,12 @@
+[
+  {
+    "name": "São Miguel",
+    "description": "Maior ilha",
+    "numeroPOIs": 45
+  },
+  {
+    "name": "Terceira",
+    "description": "Com história",
+    "numeroPOIs": 32
+  }
+]

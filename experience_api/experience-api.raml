@@ -1,0 +1,364 @@
+#%RAML 1.0
+title: Experience_API
+version: v1
+baseUri: https://api.example.com/{version}
+mediaType: application/json
+
+documentation:
+  - title: Experience API - Frontend Interface
+    content: |
+      Experience API é a camada de apresentação otimizada para consumo direto pelo frontend (React).
+      Fornece dados já formatados, pré-processados e prontos para renderização.
+      Implementa autenticação JWT e CORS para acesso web.
+
+traits:
+  commonResponses: !include traits/commonResponses.raml
+  pagination: !include traits/pagination.raml
+  secured: !include traits/secured.raml
+  corsEnabled: !include traits/corsEnabled.raml
+
+securitySchemes:
+  jwt:
+    description: Bearer token JWT (24h expiration)
+    type: x-custom
+    describedBy:
+      headers:
+        Authorization:
+          description: Bearer token
+          type: string
+
+types:
+  PagingResponse:
+    type: object
+    properties:
+      data:
+        type: array
+        items: ItineraryCard
+      pagination:
+        type: object
+        properties:
+          total: integer
+
+  User: !include types/User.raml
+  AuthToken: !include types/AuthToken.raml
+  LocationCard: !include types/LocationCard.raml
+  WeatherCard: !include types/WeatherCard.raml
+  ItineraryCard: !include types/ItineraryCard.raml
+  HomePageData: !include types/HomePageData.raml
+  ProfileData: !include types/ProfileData.raml
+  RatingInput: !include types/RatingInput.raml
+  RatingResponse: !include types/RatingResponse.raml
+
+/auth:
+  /login:
+    post:
+      is: [ commonResponses, corsEnabled ]
+      description: Autentica utilizador e retorna JWT token
+      body:
+        application/json:
+          example: |
+            {
+              "email": "user@example.com",
+              "password": "SecurePass123!"
+            }
+      responses:
+        200:
+          body:
+            application/json:
+              type: AuthToken
+              example: !include examples/auth-token-example.json
+        401:
+          description: Credenciais inválidas
+
+  /register:
+    post:
+      is: [ commonResponses, corsEnabled ]
+      description: Regista novo utilizador
+      body:
+        application/json:
+          example: |
+            {
+              "name": "João Silva",
+              "email": "joao@example.com",
+              "password": "SecurePass123!"
+            }
+      responses:
+        201:
+          body:
+            application/json:
+              type: AuthToken
+        409:
+          description: Email já registado
+
+  /logout:
+    post:
+      is: [ secured, corsEnabled ]
+      description: Termina sessão do utilizador
+      responses:
+        204:
+          description: Logout successful
+
+/home:
+  get:
+    is: [ corsEnabled ]
+    description: Retorna dados agregados para página inicial
+    responses:
+      200:
+        body:
+          application/json:
+            type: HomePageData
+            example: !include examples/home-page-example.json
+
+/islands:
+  get:
+    is: [ corsEnabled ]
+    description: Lista todas as ilhas dos Açores
+    responses:
+      200:
+        body:
+          application/json:
+            example: !include examples/islands-list-example.json
+
+  /{islandName}:
+    get:
+      is: [ corsEnabled, commonResponses ]
+      description: Detalhes de uma ilha específica
+      responses:
+        200:
+          body:
+            application/json:
+              example: |
+                {
+                  "name": "São Miguel",
+                  "description": "Maior ilha dos Açores",
+                  "pois": []
+                }
+
+/locations:
+  get:
+    is: [ corsEnabled, commonResponses, pagination ]
+    description: Lista pontos turísticos com dados para cards de UI
+    queryParameters:
+      island:
+        type: string
+        required: false
+      category:
+        type: string
+        required: false
+      search:
+        type: string
+        required: false
+    responses:
+      200:
+        body:
+          application/json:
+            type: array
+            items: LocationCard
+            example: !include examples/locations-cards-example.json
+
+  /{id}:
+    get:
+      is: [ corsEnabled, commonResponses ]
+      description: Página completa de detalhe de um POI
+      responses:
+        200:
+          body:
+            application/json:
+              example: !include examples/location-detail-page-example.json
+
+    /weather:
+      get:
+        is: [ corsEnabled, commonResponses ]
+        description: Dados meteorológicos específicos para um POI
+        responses:
+          200:
+            body:
+              application/json:
+                type: WeatherCard
+                example: !include examples/weather-card-example.json
+
+    /ratings:
+      get:
+        is: [ corsEnabled, commonResponses, pagination ]
+        description: Lista avaliações e comentários
+        responses:
+          200:
+            body:
+              application/json:
+                example: !include examples/ratings-list-example.json
+
+      post:
+        is: [ secured, commonResponses, corsEnabled ]
+        description: Submete uma avaliação
+        body:
+          application/json:
+            type: RatingInput
+        responses:
+          201:
+            body:
+              application/json:
+                type: RatingResponse
+
+/profile:
+  get:
+    is: [ secured, corsEnabled ]
+    description: Dados completos do perfil do utilizador
+    responses:
+      200:
+        body:
+          application/json:
+            type: ProfileData
+            example: !include examples/profile-data-example.json
+
+  patch:
+    is: [ secured, commonResponses, corsEnabled ]
+    description: Atualiza dados do perfil
+    responses:
+      200:
+        body:
+          application/json:
+            type: ProfileData
+
+  /favorites:
+    get:
+      is: [ secured, corsEnabled, pagination ]
+      description: Lista POIs favoritos
+      responses:
+        200:
+          body:
+            application/json:
+              type: array
+              items: LocationCard
+              example: !include examples/favorites-cards-example.json
+
+    post:
+      is: [ secured, commonResponses, corsEnabled ]
+      description: Adiciona POI aos favoritos
+      body:
+        application/json:
+          example: |
+            {
+              "locationId": 42
+            }
+      responses:
+        201:
+          description: Added to favorites
+
+    /{locationId}:
+      delete:
+        is: [ secured, commonResponses, corsEnabled ]
+        description: Remove POI dos favoritos
+        responses:
+          204:
+            description: Removed
+
+  /itineraries:
+    get:
+      is: [ secured, corsEnabled, pagination ]
+      description: Lista itinerários do utilizador com paginação
+      responses:
+        200:
+          body:
+            application/json:
+              type: PagingResponse
+              example: !include examples/itineraries-list-example.json
+
+    post:
+      is: [ secured, commonResponses, corsEnabled ]
+      description: Cria novo itinerário
+      body:
+        application/json:
+          example: |
+            {
+              "name": "3 Dias São Miguel",
+              "startDate": "2025-12-01",
+              "endDate": "2025-12-03",
+              "locationIds": [1, 5, 12]
+            }
+      responses:
+        201:
+          body:
+            application/json:
+              type: ItineraryCard
+
+    /{itineraryId}:
+      get:
+        is: [ secured, corsEnabled ]
+        description: Detalhes de um itinerário
+        responses:
+          200:
+            body:
+              application/json:
+                example: !include examples/itinerary-detail-example.json
+
+      patch:
+        is: [ secured, commonResponses, corsEnabled ]
+        description: Atualiza itinerário
+        responses:
+          200:
+            body:
+              application/json:
+                type: ItineraryCard
+
+      delete:
+        is: [ secured, commonResponses, corsEnabled ]
+        description: Elimina itinerário
+        responses:
+          204:
+            description: Deleted
+
+      /export/pdf:
+        get:
+          is: [ secured, corsEnabled ]
+          description: Exporta itinerário como PDF
+          responses:
+            200:
+              body:
+                application/pdf:
+
+      /optimize:
+        post:
+          is: [ secured, corsEnabled ]
+          description: Otimiza ordem dos POIs
+          responses:
+            200:
+              body:
+                application/json:
+                  type: ItineraryCard
+
+/search:
+  get:
+    is: [ corsEnabled, commonResponses ]
+    description: Busca global com autocomplete
+    queryParameters:
+      q:
+        type: string
+        required: true
+        minLength: 3
+      limit:
+        type: integer
+        default: 10
+    responses:
+      200:
+        body:
+          application/json:
+            example: !include examples/search-results-example.json
+
+/recommendations:
+  get:
+    is: [ corsEnabled ]
+    description: POIs recomendados (personalizado se autenticado)
+    queryParameters:
+      island:
+        type: string
+        required: false
+      limit:
+        type: integer
+        default: 5
+    responses:
+      200:
+        body:
+          application/json:
+            type: array
+            items: LocationCard
+            example: !include examples/recommendations-example.json

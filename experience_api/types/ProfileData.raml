@@ -1,0 +1,21 @@
+#%RAML 1.0 DataType
+displayName: ProfileData
+type: object
+properties:
+  id:
+    type: integer
+  name:
+    type: string
+  email:
+    type: string
+  preferences:
+    type: object
+  statistics:
+    type: object
+
+example:
+  id: 42
+  name: "João Silva"
+  email: "joao@example.com"
+  preferences: {}
+  statistics: {}

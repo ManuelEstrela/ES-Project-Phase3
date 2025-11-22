@@ -1,0 +1,42 @@
+{
+  "type": "Feature",
+  "properties": {
+    "name": "Lagoa das Sete Cidades",
+    "place_id": "51a4d7814540e35140596bd2b6ab76244940f00101f901e6e8110000000000c00208",
+    "categories": [
+      "tourism.attraction",
+      "natural.lake",
+      "tourism.sights"
+    ],
+    "address_line1": "Sete Cidades",
+    "address_line2": "9555 Sete Cidades, Portugal",
+    "city": "Ponta Delgada",
+    "county": "Ponta Delgada",
+    "state": "Açores",
+    "country": "Portugal",
+    "country_code": "pt",
+    "postcode": "9555",
+    "lon": -25.7897,
+    "lat": 37.8615,
+    "formatted": "Lagoa das Sete Cidades, Sete Cidades, 9555 Ponta Delgada, Açores, Portugal",
+    "datasource": {
+      "sourcename": "openstreetmap",
+      "attribution": "© OpenStreetMap contributors"
+    },
+    "opening_hours": "24/7",
+    "contact": {
+      "website": "https://www.visitazores.com/pt/explore/sete-cidades"
+    },
+    "website": "https://www.visitazores.com/pt/explore/sete-cidades",
+    "wheelchair": "limited",
+    "wiki_and_media": {
+      "wikipedia": "https://pt.wikipedia.org/wiki/Lagoa_das_Sete_Cidades",
+      "wikidata": "Q1065890",
+      "image": "https://commons.wikimedia.org/wiki/File:Lagoa_das_Sete_Cidades.jpg"
+    }
+  },
+  "geometry": {
+    "type": "Point",
+    "coordinates": [-25.7897, 37.8615]
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "main": "system_api_openmeteo.raml",
+  "name": "system_api_openmeteo",
+  "groupId": "fbf924d0-c3b5-45ff-b9c7-bcf6f79cd3c2",
+  "assetId": "system_api_openmeteo",
+  "version": "1.0.0",
+  "classifier": "raml",
+  "tags": [],
+  "descriptorVersion": "1.0.0"
+}

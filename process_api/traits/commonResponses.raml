@@ -1,0 +1,20 @@
+#%RAML 1.0 Trait
+responses:
+  400:
+    description: Bad request - parâmetros inválidos
+    body:
+      application/json:
+        example:
+          {
+            "error": "Bad Request",
+            "message": "Missing or invalid parameter"
+          }
+  404:
+    description: Recurso não encontrado
+    body:
+      application/json:
+        example:
+          {
+            "error": "Not Found",
+            "message": "Resource not found"
+          }

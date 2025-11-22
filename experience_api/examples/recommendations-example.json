@@ -1,0 +1,12 @@
+[
+  {
+    "id": 10,
+    "name": "Caldeira Velha",
+    "category": "Cascata",
+    "island": "São Miguel",
+    "imageUrl": "https://example.com/caldeira-velha.jpg",
+    "description": "Cascata termal natural com piscinas naturais.",
+    "rating": 4.9,
+    "ratingCount": 421
+  }
+]

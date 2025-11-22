@@ -1,0 +1,13 @@
+#%RAML 1.0 DataType
+displayName: RatingInput
+type: object
+properties:
+  rating:
+    type: integer
+    minimum: 1
+    maximum: 5
+  comment?:
+    type: string
+example:
+  rating: 5
+  comment: "Incrível!"

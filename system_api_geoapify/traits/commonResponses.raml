@@ -1,0 +1,65 @@
+#%RAML 1.0 Trait
+
+usage: Respostas comuns para todos os endpoints da API
+
+responses:
+  400:
+    description: Requisicao invalida - parametros em falta ou incorretos
+    body:
+      application/json:
+        type: object
+        properties:
+          statusCode:
+            type: integer
+            example: 400
+          message:
+            type: string
+            example: "Parametros invalidos"
+  401:
+    description: Nao autorizado - API key invalida ou em falta
+    body:
+      application/json:
+        type: object
+        properties:
+          statusCode:
+            type: integer
+            example: 401
+          message:
+            type: string
+            example: "API key invalida"
+  404:
+    description: Recurso nao encontrado
+    body:
+      application/json:
+        type: object
+        properties:
+          statusCode:
+            type: integer
+            example: 404
+          message:
+            type: string
+            example: "Recurso nao encontrado"
+  429:
+    description: Limite de requisicoes excedido
+    body:
+      application/json:
+        type: object
+        properties:
+          statusCode:
+            type: integer
+            example: 429
+          message:
+            type: string
+            example: "Limite de requisicoes excedido"
+  500:
+    description: Erro interno do servidor
+    body:
+      application/json:
+        type: object
+        properties:
+          statusCode:
+            type: integer
+            example: 500
+          message:
+            type: string
+            example: "Erro interno do servidor"

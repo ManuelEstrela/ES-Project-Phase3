@@ -1,0 +1,147 @@
+#%RAML 1.0 DataType
+
+type: object
+description: Detalhes completos de um ponto de interesse especifico
+
+properties:
+  type:
+    type: string
+    description: Tipo de feature GeoJSON
+    example: Feature
+  properties:
+    type: object
+    properties:
+      name:
+        type: string
+        required: false
+        description: Nome do local
+        example: Lagoa das Sete Cidades
+      place_id:
+        type: string
+        required: true
+        description: ID unico do local
+      categories:
+        type: array
+        items:
+          type: string
+        required: false
+        description: Categorias
+        example: ["tourism.attraction", "natural.lake"]
+      address_line1:
+        type: string
+        required: false
+        description: Endereco linha 1
+      address_line2:
+        type: string
+        required: false
+        description: Endereco linha 2
+      city:
+        type: string
+        required: false
+        description: Cidade
+      county:
+        type: string
+        required: false
+        description: Concelho
+      state:
+        type: string
+        required: false
+        description: Estado/Regiao
+      country:
+        type: string
+        required: false
+        description: Pais
+      country_code:
+        type: string
+        required: false
+        description: Codigo do pais
+      postcode:
+        type: string
+        required: false
+        description: Codigo postal
+      lon:
+        type: number
+        required: true
+        description: Longitude
+      lat:
+        type: number
+        required: true
+        description: Latitude
+      formatted:
+        type: string
+        required: false
+        description: Endereco formatado
+      datasource:
+        type: object
+        required: false
+        description: Fonte dos dados
+        properties:
+          sourcename:
+            type: string
+            example: openstreetmap
+          attribution:
+            type: string
+            example: © OpenStreetMap contributors
+      opening_hours:
+        type: string
+        required: false
+        description: Horario de funcionamento
+        example: "Mo-Su 09:00-18:00"
+      contact:
+        type: object
+        required: false
+        description: Informacoes de contacto
+        properties:
+          phone:
+            type: string
+            required: false
+            example: "+351296123456"
+          website:
+            type: string
+            required: false
+            example: "https://www.example.com"
+          email:
+            type: string
+            required: false
+            example: "info@example.com"
+      website:
+        type: string
+        required: false
+        description: Website
+      phone:
+        type: string
+        required: false
+        description: Telefone
+      wheelchair:
+        type: string
+        required: false
+        description: Acessibilidade
+        enum: [yes, no, limited]
+      wiki_and_media:
+        type: object
+        required: false
+        description: Links para Wikipedia e media
+        properties:
+          wikipedia:
+            type: string
+            required: false
+          wikidata:
+            type: string
+            required: false
+          image:
+            type: string
+            required: false
+  geometry:
+    type: object
+    description: Geometria GeoJSON
+    properties:
+      type:
+        type: string
+        example: Point
+      coordinates:
+        type: array
+        items:
+          type: number
+        minItems: 2
+        maxItems: 2
+        example: [-25.7897, 37.8615]

@@ -1,0 +1,136 @@
+#%RAML 1.0
+title: Process_API
+version: v1
+baseUri: https://api.example.com/{version}
+mediaType: application/json
+
+traits:
+  commonResponses: !include traits/commonResponses.raml
+  pagination: !include traits/pagination.raml
+
+types:
+  Location: !include types/Location.raml
+  Weather: !include types/Weather.raml
+  Route: !include types/Route.raml
+  LocationList:
+    type: array
+    items: Location
+
+/locations:
+  get:
+    is: [ commonResponses, pagination ]
+    description: >
+      Lista pontos turísticos das ilhas dos Açores. Integra dados de Geoapify e da base de dados interna.
+    queryParameters:
+      island:
+        type: string
+        description: Filtrar por nome da ilha (e.g., "São Miguel")
+      category:
+        type: string
+        description: Filtrar por categoria (e.g., "trilho", "museu")
+    responses:
+      200:
+        description: Lista de locais turísticos
+        body:
+          application/json:
+            type: LocationList
+            example: !include examples/location-list-example.json
+
+/locations/{id}:
+  uriParameters:
+    id:
+      type: integer
+      required: true
+      description: ID do ponto turístico
+  get:
+    is: [ commonResponses ]
+    description: Retorna os detalhes completos de um ponto turístico específico.
+    responses:
+      200:
+        body:
+          application/json:
+            type: Location
+            example: !include examples/location-single-example.json
+
+/weather:
+  get:
+    is: [ commonResponses ]
+    description: >
+      Retorna as condições meteorológicas atuais para uma localização específica (integra OpenMeteo API).
+    queryParameters:
+      latitude:
+        type: number
+        required: true
+      longitude:
+        type: number
+        required: true
+    responses:
+      200:
+        body:
+          application/json:
+            type: Weather
+            example: !include examples/weather-example.json
+
+/routes:
+  get:
+    is: [ commonResponses ]
+    description: Retorna rota entre dois pontos geográficos (Geoapify routing).
+    queryParameters:
+      origin:
+        type: string
+        required: true
+        description: "Coordenadas de origem 'lat,lon' (ex: 37.75,-25.67)"
+      destination:
+        type: string
+        required: true
+        description: "Coordenadas de destino 'lat,lon' (ex: 37.78,-25.71)"
+    responses:
+      200:
+        body:
+          application/json:
+            type: Route
+            example: !include examples/route-example.json
+
+/itineraries:
+  get:
+    is: [ commonResponses, pagination ]
+    description: Lista itinerários do utilizador (dados simulados).
+    responses:
+      200:
+        body:
+          application/json:
+            example: []
+  post:
+    description: Cria um novo itinerário (protótipo) com pontos selecionados.
+    body:
+      application/json:
+        example: |
+          {
+            "userId": 42,
+            "name": "3 dias São Miguel",
+            "points": [1, 5, 12]
+          }
+    responses:
+      201:
+        description: Itinerário criado com sucesso
+        body:
+          application/json:
+            example: { "id": 101, "message": "Itinerary created" }
+
+/ratings:
+  post:
+    description: Submete uma avaliação (protótipo).
+    body:
+      application/json:
+        example: |
+          {
+            "userId": 42,
+            "locationId": 1,
+            "rating": 5,
+            "comment": "Lugar incrível!"
+          }
+    responses:
+      201:
+        body:
+          application/json:
+            example: { "message": "Rating received" }

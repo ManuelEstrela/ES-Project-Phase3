@@ -1,0 +1,25 @@
+#%RAML 1.0 DataType
+displayName: WeatherCard
+type: object
+properties:
+  current:
+    type: object
+    properties:
+      temperature:
+        type: number
+      condition:
+        type: string
+      windSpeed:
+        type: number
+      humidity:
+        type: number
+  forecast:
+    type: array
+
+example:
+  current:
+    temperature: 18.5
+    condition: "Cloudy"
+    windSpeed: 25
+    humidity: 87
+  forecast: []

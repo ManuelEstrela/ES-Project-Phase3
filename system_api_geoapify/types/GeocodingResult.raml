@@ -1,0 +1,147 @@
+#%RAML 1.0 DataType
+
+type: object
+description: Resultado de geocoding (search ou reverse)
+
+properties:
+  type:
+    type: string
+    description: Tipo de FeatureCollection
+    example: FeatureCollection
+  features:
+    type: array
+    items:
+      type: object
+      properties:
+        type:
+          type: string
+          example: Feature
+        properties:
+          type: object
+          properties:
+            name:
+              type: string
+              required: false
+              description: Nome do local
+              example: Lagoa das Sete Cidades
+            country:
+              type: string
+              required: false
+              description: Pais
+              example: Portugal
+            country_code:
+              type: string
+              required: false
+              description: Codigo do pais
+              example: pt
+            state:
+              type: string
+              required: false
+              description: Estado/Regiao
+              example: Acores
+            county:
+              type: string
+              required: false
+              description: Concelho
+              example: Ponta Delgada
+            city:
+              type: string
+              required: false
+              description: Cidade
+              example: Ponta Delgada
+            municipality:
+              type: string
+              required: false
+              description: Municipio
+            postcode:
+              type: string
+              required: false
+              description: Codigo postal
+              example: "9555"
+            district:
+              type: string
+              required: false
+              description: Distrito
+            street:
+              type: string
+              required: false
+              description: Rua
+            housenumber:
+              type: string
+              required: false
+              description: Numero da porta
+            suburb:
+              type: string
+              required: false
+              description: Freguesia
+            lon:
+              type: number
+              required: true
+              description: Longitude
+              example: -25.7897
+            lat:
+              type: number
+              required: true
+              description: Latitude
+              example: 37.8615
+            formatted:
+              type: string
+              required: false
+              description: Endereco formatado completo
+              example: Lagoa das Sete Cidades, 9555 Ponta Delgada, Acores, Portugal
+            address_line1:
+              type: string
+              required: false
+              description: Linha 1 do endereco
+            address_line2:
+              type: string
+              required: false
+              description: Linha 2 do endereco
+            category:
+              type: string
+              required: false
+              description: Categoria do resultado
+            result_type:
+              type: string
+              required: false
+              description: Tipo de resultado
+              example: amenity
+            rank:
+              type: object
+              required: false
+              description: Relevancia do resultado
+              properties:
+                importance:
+                  type: number
+                  example: 0.85
+                popularity:
+                  type: number
+                  example: 0.92
+            place_id:
+              type: string
+              required: false
+              description: ID do local
+        geometry:
+          type: object
+          properties:
+            type:
+              type: string
+              example: Point
+            coordinates:
+              type: array
+              items:
+                type: number
+              minItems: 2
+              maxItems: 2
+              example: [-25.7897, 37.8615]
+  query:
+    type: object
+    required: false
+    description: Parametros da query original
+    properties:
+      text:
+        type: string
+        required: false
+      parsed:
+        type: object
+        required: false

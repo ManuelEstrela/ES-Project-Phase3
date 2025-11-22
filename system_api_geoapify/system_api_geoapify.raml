@@ -1,0 +1,147 @@
+#%RAML 1.0
+title: System_API_Geoapify
+version: v1
+baseUri: https://api.geoapify.com/{version}
+mediaType: application/json
+
+documentation:
+  - title: Descricao
+    content: |
+      API de Sistema para integracao com Geoapify.
+      Fornece dados de geocoding, pontos de interesse e detalhes de localizacoes nos Acores.
+
+traits:
+  commonResponses: !include traits/commonResponses.raml
+
+types:
+  Place: !include types/Place.raml
+  PlaceDetails: !include types/PlaceDetails.raml
+  GeocodingResult: !include types/GeocodingResult.raml
+  PlacesResponse: !include types/PlacesResponse.raml
+
+/places:
+  get:
+    is: [ commonResponses ]
+    description: >
+      Obtem pontos de interesse (POIs) numa area especifica.
+      Permite filtrar por categoria (turismo, praias, miradouros, museus, etc).
+    queryParameters:
+      categories:
+        type: string
+        required: true
+        description: Categorias de pontos de interesse (ex tourism.attraction,natural.beach)
+        example: tourism.attraction,tourism.sights
+      filter:
+        type: string
+        required: true
+        description: Filtro geografico (circle ou rect)
+        example: circle:-25.6756,37.7412,5000
+      limit:
+        type: integer
+        required: false
+        default: 20
+        description: Numero maximo de resultados (1-500)
+        minimum: 1
+        maximum: 500
+      lang:
+        type: string
+        required: false
+        default: pt
+        description: Idioma dos resultados
+        enum: [pt, en, es, fr]
+    responses:
+      200:
+        description: Lista de pontos de interesse
+        body:
+          application/json:
+            type: PlacesResponse
+            example: !include examples/places-response-example.json
+
+/places/{placeId}:
+  get:
+    is: [ commonResponses ]
+    description: >
+      Obtem detalhes completos de um ponto de interesse especifico.
+    uriParameters:
+      placeId:
+        type: string
+        description: ID unico do local
+        example: 51a4d7814540e35140596bd2b6ab76244940f00101f901e6e8110000000000c00208
+    queryParameters:
+      lang:
+        type: string
+        required: false
+        default: pt
+        description: Idioma dos detalhes
+    responses:
+      200:
+        description: Detalhes do ponto de interesse
+        body:
+          application/json:
+            type: PlaceDetails
+            example: !include examples/place-details-example.json
+
+/geocode/search:
+  get:
+    is: [ commonResponses ]
+    description: >
+      Converte endereco ou nome de local em coordenadas geograficas.
+      Util para pesquisas textuais de localizacoes.
+    queryParameters:
+      text:
+        type: string
+        required: true
+        description: Texto de pesquisa (endereco, local, ponto turistico)
+        example: Lagoa das Sete Cidades
+      filter:
+        type: string
+        required: false
+        description: Filtro geografico para restringir area de pesquisa
+        example: countrycode:pt
+      limit:
+        type: integer
+        required: false
+        default: 5
+        description: Numero de resultados
+        minimum: 1
+        maximum: 20
+      lang:
+        type: string
+        required: false
+        default: pt
+    responses:
+      200:
+        description: Resultados de geocoding
+        body:
+          application/json:
+            type: GeocodingResult
+            example: !include examples/geocoding-example.json
+
+/geocode/reverse:
+  get:
+    is: [ commonResponses ]
+    description: >
+      Converte coordenadas geograficas em endereco ou local.
+      Reverse geocoding para obter nome do local a partir de lat/lon.
+    queryParameters:
+      lat:
+        type: number
+        required: true
+        description: Latitude
+        example: 37.7412
+      lon:
+        type: number
+        required: true
+        description: Longitude
+        example: -25.6756
+      lang:
+        type: string
+        required: false
+        default: pt
+    responses:
+      200:
+        description: Informacao do local
+        body:
+          application/json:
+            type: GeocodingResult
+            example: !include examples/geocoding-example.json

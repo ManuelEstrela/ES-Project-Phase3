@@ -1,0 +1,27 @@
+#%RAML 1.0 Trait
+securedBy: [ jwt ]
+headers:
+  Authorization:
+    description: Bearer token JWT
+    type: string
+    required: true
+    example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+responses:
+  401:
+    description: Token inválido ou expirado
+    body:
+      application/json:
+        example:
+          {
+            "error": "Unauthorized",
+            "message": "Invalid or expired token"
+          }
+  403:
+    description: Token válido mas sem permissões
+    body:
+      application/json:
+        example:
+          {
+            "error": "Forbidden",
+            "message": "Insufficient permissions"
+          }

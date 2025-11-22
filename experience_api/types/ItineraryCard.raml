@@ -1,0 +1,24 @@
+#%RAML 1.0 DataType
+displayName: ItineraryCard
+type: object
+properties:
+  id:
+    type: integer
+  name:
+    type: string
+  startDate:
+    type: string
+  endDate:
+    type: string
+  numberOfLocations:
+    type: integer
+  totalDistance:
+    type: number
+
+example:
+  id: 1
+  name: "3 Dias São Miguel"
+  startDate: "2025-12-01"
+  endDate: "2025-12-03"
+  numberOfLocations: 5
+  totalDistance: 120.5

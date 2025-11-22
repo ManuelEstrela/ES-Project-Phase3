@@ -1,0 +1,12 @@
+[
+  {
+    "id": 5,
+    "name": "Ponta Delgada",
+    "category": "Cidade",
+    "island": "São Miguel",
+    "imageUrl": "https://example.com/delgada.jpg",
+    "description": "Capital dos Açores com arquitetura histórica.",
+    "rating": 4.6,
+    "ratingCount": 150
+  }
+]

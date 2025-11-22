@@ -1,0 +1,38 @@
+#%RAML 1.0 Trait
+responses:
+  400:
+    description: Bad request - parametros invalidos ou em falta
+    body:
+      application/json:
+        example:
+          {
+            "error": true,
+            "reason": "Invalid latitude or longitude format"
+          }
+  404:
+    description: Recurso nao encontrado
+    body:
+      application/json:
+        example:
+          {
+            "error": true,
+            "reason": "Location not found"
+          }
+  500:
+    description: Erro interno no servico OpenMeteo
+    body:
+      application/json:
+        example:
+          {
+            "error": true,
+            "reason": "Internal server error"
+          }
+  503:
+    description: Servico temporariamente indisponivel
+    body:
+      application/json:
+        example:
+          {
+            "error": true,
+            "reason": "Service temporarily unavailable"
+          }

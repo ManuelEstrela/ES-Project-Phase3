@@ -1,0 +1,8 @@
+{
+  "distance_km": 12.4,
+  "duration_min": 25,
+  "path": [
+    { "lat": 37.75, "lon": -25.67 },
+    { "lat": 37.78, "lon": -25.71 }
+  ]
+}

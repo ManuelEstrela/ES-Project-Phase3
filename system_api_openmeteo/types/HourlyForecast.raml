@@ -1,0 +1,27 @@
+#%RAML 1.0 DataType
+type: object
+properties:
+  time:
+    type: array
+    items: string
+  temperature_2m:
+    type: array
+    items: number
+  precipitation:
+    type: array
+    items: number
+  windspeed_10m:
+    type: array
+    items: number
+  winddirection_10m?:
+    type: array
+    items: number
+  weathercode?:
+    type: array
+    items: integer
+  relative_humidity_2m?:
+    type: array
+    items: number
+  cloudcover?:
+    type: array
+    items: number

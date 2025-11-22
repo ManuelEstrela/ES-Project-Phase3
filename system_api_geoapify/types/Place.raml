@@ -1,0 +1,104 @@
+#%RAML 1.0 DataType
+
+type: object
+description: Representa um ponto de interesse (POI) basico retornado pela API Geoapify
+
+properties:
+  type:
+    type: string
+    description: Tipo de feature GeoJSON
+    example: Feature
+  properties:
+    type: object
+    properties:
+      name:
+        type: string
+        required: false
+        description: Nome do local
+        example: Lagoa das Sete Cidades
+      place_id:
+        type: string
+        required: true
+        description: ID unico do local
+        example: 51a4d7814540e35140596bd2b6ab76244940f00101f901e6e8110000000000c00208
+      categories:
+        type: array
+        items:
+          type: string
+        required: false
+        description: Categorias do ponto de interesse
+        example: ["tourism.attraction", "natural.lake"]
+      address_line1:
+        type: string
+        required: false
+        description: Endereco linha 1
+        example: Sete Cidades
+      address_line2:
+        type: string
+        required: false
+        description: Endereco linha 2
+        example: 9555 Sete Cidades, Portugal
+      city:
+        type: string
+        required: false
+        description: Cidade
+        example: Ponta Delgada
+      county:
+        type: string
+        required: false
+        description: Concelho
+        example: Ponta Delgada
+      state:
+        type: string
+        required: false
+        description: Distrito/Regiao
+        example: Acores
+      country:
+        type: string
+        required: false
+        description: Pais
+        example: Portugal
+      country_code:
+        type: string
+        required: false
+        description: Codigo ISO do pais
+        example: pt
+      postcode:
+        type: string
+        required: false
+        description: Codigo postal
+        example: "9555"
+      lon:
+        type: number
+        required: true
+        description: Longitude
+        example: -25.7897
+      lat:
+        type: number
+        required: true
+        description: Latitude
+        example: 37.8615
+      formatted:
+        type: string
+        required: false
+        description: Endereco formatado completo
+        example: Lagoa das Sete Cidades, Sete Cidades, 9555 Ponta Delgada, Portugal
+      distance:
+        type: number
+        required: false
+        description: Distancia em metros (quando aplicavel)
+        example: 1250
+  geometry:
+    type: object
+    description: Coordenadas geograficas GeoJSON
+    properties:
+      type:
+        type: string
+        example: Point
+      coordinates:
+        type: array
+        items:
+          type: number
+        minItems: 2
+        maxItems: 2
+        example: [-25.7897, 37.8615]

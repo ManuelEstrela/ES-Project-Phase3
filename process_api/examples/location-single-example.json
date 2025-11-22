@@ -1,0 +1,12 @@
+{
+  "id": 1,
+  "name": "Lagoa das Sete Cidades",
+  "category": "lagoa",
+  "island": "São Miguel",
+  "latitude": 37.851,
+  "longitude": -25.790,
+  "address": "Sete Cidades, São Miguel",
+  "description": "Um dos locais mais emblemáticos dos Açores.",
+  "difficulty": "n/a",
+  "accessibility": "parcial"
+}

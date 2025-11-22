@@ -1,0 +1,172 @@
+#%RAML 1.0
+title: System_API_OpenMeteo
+version: v1
+baseUri: https://api.open-meteo.com/{version}
+mediaType: application/json
+
+documentation:
+  - title: Descricao
+    content: |
+      API de Sistema para integracao com OpenMeteo.
+      Fornece dados meteorologicos em tempo real e previsoes para os Acores.
+
+traits:
+  commonResponses: !include traits/commonResponses.raml
+
+types:
+  CurrentWeather: !include types/CurrentWeather.raml
+  WeatherForecast: !include types/WeatherForecast.raml
+  HourlyForecast: !include types/HourlyForecast.raml
+  DailyForecast: !include types/DailyForecast.raml
+
+/forecast:
+  get:
+    is: [ commonResponses ]
+    description: >
+      Obtem previsao meteorologica completa (dados horarios e diarios) para uma localizacao especifica.
+      Integra diretamente a API OpenMeteo.
+    queryParameters:
+      latitude:
+        type: number
+        required: true
+        description: Latitude da localizacao (ex 37.7412)
+        example: 37.7412
+      longitude:
+        type: number
+        required: true
+        description: Longitude da localizacao (ex -25.6756)
+        example: -25.6756
+      forecast_days:
+        type: integer
+        required: false
+        default: 7
+        description: Numero de dias de previsao (1-16)
+        minimum: 1
+        maximum: 16
+      hourly:
+        type: string
+        required: false
+        description: Parametros horarios separados por virgula (ex temperature_2m,precipitation)
+        example: temperature_2m,precipitation,windspeed_10m
+      daily:
+        type: string
+        required: false
+        description: Parametros diarios separados por virgula (ex temperature_2m_max,precipitation_sum)
+        example: temperature_2m_max,temperature_2m_min,precipitation_sum
+      timezone:
+        type: string
+        required: false
+        default: "Atlantic/Azores"
+        description: Fuso horario para os timestamps
+    responses:
+      200:
+        description: Previsao meteorologica obtida com sucesso
+        body:
+          application/json:
+            type: WeatherForecast
+            example: !include examples/forecast-example.json
+
+/current:
+  get:
+    is: [ commonResponses ]
+    description: >
+      Obtem condicoes meteorologicas atuais para uma localizacao especifica.
+    queryParameters:
+      latitude:
+        type: number
+        required: true
+        description: Latitude da localizacao
+        example: 37.7412
+      longitude:
+        type: number
+        required: true
+        description: Longitude da localizacao
+        example: -25.6756
+      current:
+        type: string
+        required: false
+        description: Parametros atuais separados por virgula
+        example: temperature_2m,windspeed_10m,weathercode
+        default: temperature_2m,windspeed_10m,weathercode,winddirection_10m
+      timezone:
+        type: string
+        required: false
+        default: "Atlantic/Azores"
+    responses:
+      200:
+        description: Condicoes meteorologicas atuais
+        body:
+          application/json:
+            type: CurrentWeather
+            example: !include examples/current-weather-example.json
+
+/hourly:
+  get:
+    is: [ commonResponses ]
+    description: >
+      Obtem previsao meteorologica horaria detalhada.
+    queryParameters:
+      latitude:
+        type: number
+        required: true
+      longitude:
+        type: number
+        required: true
+      forecast_hours:
+        type: integer
+        required: false
+        default: 48
+        description: Numero de horas de previsao (ate 384)
+        minimum: 1
+        maximum: 384
+      hourly:
+        type: string
+        required: false
+        default: temperature_2m,precipitation,windspeed_10m
+        description: Parametros horarios desejados
+      timezone:
+        type: string
+        required: false
+        default: "Atlantic/Azores"
+    responses:
+      200:
+        description: Previsao horaria
+        body:
+          application/json:
+            type: HourlyForecast
+            example: !include examples/hourly-forecast-example.json
+
+/daily:
+  get:
+    is: [ commonResponses ]
+    description: >
+      Obtem previsao meteorologica diaria (maximas, minimas, precipitacao).
+    queryParameters:
+      latitude:
+        type: number
+        required: true
+      longitude:
+        type: number
+        required: true
+      forecast_days:
+        type: integer
+        required: false
+        default: 7
+        minimum: 1
+        maximum: 16
+      daily:
+        type: string
+        required: false
+        default: temperature_2m_max,temperature_2m_min,precipitation_sum
+        description: Parametros diarios desejados
+      timezone:
+        type: string
+        required: false
+        default: "Atlantic/Azores"
+    responses:
+      200:
+        description: Previsao diaria
+        body:
+          application/json:
+            type: DailyForecast
+            example: !include examples/daily-forecast-example.json

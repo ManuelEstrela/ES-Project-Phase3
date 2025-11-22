@@ -1,0 +1,13 @@
+{
+  "main": "experience-api.raml",
+  "name": "Experience API",
+  "groupId": "576fa70c-c855-4979-9f86-2f9b8061bf10",
+  "assetId": "experience-api",
+  "version": "1.0.0",
+  "classifier": "raml",
+  "tags": [],
+  "descriptorVersion": "1.0.0",
+  "organizationId": "576fa70c-c855-4979-9f86-2f9b8061bf10",
+  "apiVersion": "v1",
+  "originalFormatVersion": "1.0"
+}

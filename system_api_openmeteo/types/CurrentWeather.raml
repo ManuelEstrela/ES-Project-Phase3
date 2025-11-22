@@ -1,0 +1,19 @@
+#%RAML 1.0 DataType
+type: object
+properties:
+  latitude: number
+  longitude: number
+  elevation?: number
+  timezone?: string
+  current:
+    type: object
+    properties:
+      time: string
+      temperature_2m: number
+      windspeed_10m: number
+      winddirection_10m?: number
+      weathercode: integer
+      relative_humidity_2m?: number
+      apparent_temperature?: number
+      precipitation?: number
+      cloudcover?: number

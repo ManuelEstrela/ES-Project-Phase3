@@ -1,0 +1,21 @@
+{
+  "featuredIslands": [
+    {
+      "name": "São Miguel",
+      "poiCount": 45,
+      "weather": {
+        "temperature": 19
+      }
+    },
+    {
+      "name": "Terceira",
+      "poiCount": 32,
+      "weather": {
+        "temperature": 21
+      }
+    }
+  ],
+  "popularLocations": [],
+  "recommendations": [],
+  "weatherAlerts": []
+}

@@ -1,0 +1,18 @@
+#%RAML 1.0 Trait
+headers:
+  Access-Control-Allow-Origin:
+    type: string
+    required: true
+    default: "*"
+  Access-Control-Allow-Methods:
+    type: string
+    required: true
+    default: "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+  Access-Control-Allow-Headers:
+    type: string
+    required: true
+    default: "Content-Type, Authorization"
+  Access-Control-Allow-Credentials:
+    type: string
+    required: false
+    default: "true"

@@ -1,0 +1,17 @@
+{
+  "latitude": 37.74,
+  "longitude": -25.68,
+  "elevation": 45.0,
+  "timezone": "Atlantic/Azores",
+  "current": {
+    "time": "2025-11-12T10:00:00Z",
+    "temperature_2m": 18.2,
+    "windspeed_10m": 5.4,
+    "winddirection_10m": 230,
+    "weathercode": 2,
+    "relative_humidity_2m": 75,
+    "apparent_temperature": 17.5,
+    "precipitation": 0.0,
+    "cloudcover": 40
+  }
+}

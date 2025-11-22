@@ -1,0 +1,10 @@
+{
+  "main": "process_api.raml",
+  "name": "process_api",
+  "groupId": "fbf924d0-c3b5-45ff-b9c7-bcf6f79cd3c2",
+  "assetId": "process_api",
+  "version": "1.0.0",
+  "classifier": "raml",
+  "tags": [],
+  "descriptorVersion": "1.0.0"
+}

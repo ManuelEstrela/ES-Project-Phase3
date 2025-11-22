@@ -1,0 +1,22 @@
+[
+  {
+    "id": 1,
+    "name": "Lagoa das Sete Cidades",
+    "category": "Miradouro",
+    "island": "São Miguel",
+    "imageUrl": "https://example.com/sete-cidades.jpg",
+    "description": "Lagoa icónica com paisagem única nos Açores.",
+    "rating": 4.8,
+    "ratingCount": 342
+  },
+  {
+    "id": 2,
+    "name": "Furnas",
+    "category": "Termas",
+    "island": "São Miguel",
+    "imageUrl": "https://example.com/furnas.jpg",
+    "description": "Caldeiras vulcânicas e águas termais.",
+    "rating": 4.7,
+    "ratingCount": 280
+  }
+]

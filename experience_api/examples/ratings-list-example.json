@@ -1,0 +1,11 @@
+{
+  "total": 342,
+  "average": 4.8,
+  "ratings": [
+    {
+      "id": 1001,
+      "userName": "João Silva",
+      "rating": 5
+    }
+  ]
+}

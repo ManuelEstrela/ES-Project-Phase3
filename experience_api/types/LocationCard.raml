@@ -1,0 +1,30 @@
+#%RAML 1.0 DataType
+displayName: LocationCard
+type: object
+properties:
+  id:
+    type: integer
+  name:
+    type: string
+  category:
+    type: string
+  island:
+    type: string
+  imageUrl:
+    type: string
+  description:
+    type: string
+  rating:
+    type: number
+  ratingCount:
+    type: integer
+
+example:
+  id: 1
+  name: "Lagoa das Sete Cidades"
+  category: "Miradouro"
+  island: "São Miguel"
+  imageUrl: "https://example.com/sete-cidades.jpg"
+  description: "Lagoa icónica com paisagem única nos Açores."
+  rating: 4.8
+  ratingCount: 342

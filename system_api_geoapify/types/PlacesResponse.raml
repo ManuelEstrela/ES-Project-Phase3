@@ -1,0 +1,41 @@
+#%RAML 1.0 DataType
+
+type: object
+description: Resposta da API de pontos de interesse (places)
+
+properties:
+  type:
+    type: string
+    description: Tipo de FeatureCollection
+    example: FeatureCollection
+  features:
+    type: array
+    description: Lista de pontos de interesse encontrados
+    items:
+      type: !include Place.raml
+  properties:
+    type: object
+    required: false
+    description: Metadados da resposta
+    properties:
+      query:
+        type: object
+        required: false
+        description: Parametros da query
+        properties:
+          categories:
+            type: array
+            items:
+              type: string
+            example: ["tourism.attraction", "natural.beach"]
+          filter:
+            type: string
+            example: "circle:-25.6756,37.7412,5000"
+          limit:
+            type: integer
+            example: 20
+      count:
+        type: integer
+        required: false
+        description: Numero de resultados retornados
+        example: 15

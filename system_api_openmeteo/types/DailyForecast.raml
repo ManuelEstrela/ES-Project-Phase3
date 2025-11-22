@@ -1,0 +1,27 @@
+#%RAML 1.0 DataType
+type: object
+properties:
+  time:
+    type: array
+    items: string
+  temperature_2m_max:
+    type: array
+    items: number
+  temperature_2m_min:
+    type: array
+    items: number
+  precipitation_sum:
+    type: array
+    items: number
+  windspeed_10m_max?:
+    type: array
+    items: number
+  weathercode?:
+    type: array
+    items: integer
+  sunrise?:
+    type: array
+    items: string
+  sunset?:
+    type: array
+    items: string
