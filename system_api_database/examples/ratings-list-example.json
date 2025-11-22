@@ -1,0 +1,18 @@
+[
+  {
+    "id": 1001,
+    "location_id": 1,
+    "user_id": 42,
+    "rating": 5,
+    "comment": "Lugar incrível!",
+    "created_at": "2025-11-10T15:00:00Z"
+  },
+  {
+    "id": 1002,
+    "location_id": 1,
+    "user_id": 43,
+    "rating": 4,
+    "comment": "Muito bonito!",
+    "created_at": "2025-11-11T10:00:00Z"
+  }
+]

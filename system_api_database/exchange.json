@@ -1,8 +1,8 @@
 {
-  "main": "experience-api.raml",
-  "name": "experience_api",
+  "main": "system_api_database.raml",
+  "name": "system_api_database",
   "groupId": "fbf924d0-c3b5-45ff-b9c7-bcf6f79cd3c2",
-  "assetId": "experience_api",
+  "assetId": "system_api_database",
   "version": "1.0.0",
   "classifier": "raml",
   "tags": [],

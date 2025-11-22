@@ -1,0 +1,9 @@
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "expiresIn": 86400,
+  "user": {
+    "id": 42,
+    "name": "João Silva",
+    "email": "joao@example.com"
+  }
+}

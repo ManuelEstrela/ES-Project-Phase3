@@ -1,23 +1,52 @@
 #%RAML 1.0 DataType
 displayName: LocationCard
+description: |
+  Card UI-ready de um ponto turístico.
+  
+  FONTE DOS DADOS:
+  - id, name, category, island, description: Process API /locations
+  - imageUrl: Base de dados de imagens (tabela location_images) ou placeholder
+  - rating, ratingCount: Base de dados de ratings (agregação da tabela ratings)
+  
+  TRANSFORMAÇÃO NECESSÁRIA:
+  Process API retorna snake_case (latitude, longitude, difficulty, accessibility)
+  Experience API retorna apenas campos necessários para UI em camelCase
+
 type: object
 properties:
   id:
     type: integer
+    description: ID do ponto turístico (do Process API)
   name:
     type: string
+    description: Nome do local (do Process API)
   category:
     type: string
+    description: Categoria (do Process API - ex miradouro, praia, trilho)
   island:
     type: string
+    description: Nome da ilha (do Process API)
   imageUrl:
     type: string
+    description: |
+      URL da imagem principal.
+      FONTE: BD interna (tabela location_images) ou gerada dinamicamente.
+      FALLBACK: https://via.placeholder.com/400x300?text={name}
   description:
     type: string
+    description: Descrição resumida (do Process API)
   rating:
     type: number
+    description: |
+      Média de avaliações (0.0 - 5.0).
+      FONTE: Calculado da BD (SELECT AVG(rating) FROM ratings WHERE location_id = ?)
+      DEFAULT: 0.0 se não houver ratings
   ratingCount:
     type: integer
+    description: |
+      Número total de avaliações.
+      FONTE: Contado da BD (SELECT COUNT(*) FROM ratings WHERE location_id = ?)
+      DEFAULT: 0 se não houver ratings
 
 example:
   id: 1

@@ -1,0 +1,312 @@
+#%RAML 1.0
+title: System_API_Database
+version: v1
+baseUri: https://api.example.com/{version}
+mediaType: application/json
+
+documentation:
+  - title: Descricao
+    content: |
+      API de Sistema para gestao de dados internos (base de dados).
+      Fornece operacoes CRUD para utilizadores, ratings, favoritos e itinerarios.
+
+traits:
+  commonResponses: !include traits/commonResponses.raml
+
+types:
+  User: !include types/User.raml
+  Rating: !include types/Rating.raml
+  Favorite: !include types/Favorite.raml
+  Itinerary: !include types/Itinerary.raml
+  LocationImage: !include types/LocationImage.raml
+
+/users:
+  post:
+    is: [ commonResponses ]
+    description: Regista novo utilizador
+    body:
+      application/json:
+        example: |
+          {
+            "name": "João Silva",
+            "email": "joao@example.com",
+            "password": "SecurePass123!"
+          }
+    responses:
+      201:
+        body:
+          application/json:
+            example: !include examples/auth-response-example.json
+      409:
+        description: Email ja existe
+
+  /login:
+    post:
+      is: [ commonResponses ]
+      description: Autentica utilizador e retorna token JWT
+      body:
+        application/json:
+          example: |
+            {
+              "email": "joao@example.com",
+              "password": "SecurePass123!"
+            }
+      responses:
+        200:
+          body:
+            application/json:
+              example: !include examples/auth-response-example.json
+        401:
+          description: Credenciais invalidas
+
+  /{userId}:
+    get:
+      is: [ commonResponses ]
+      description: Obtem dados do utilizador
+      responses:
+        200:
+          body:
+            application/json:
+              type: User
+              example: !include examples/user-example.json
+
+    patch:
+      is: [ commonResponses ]
+      description: Atualiza dados do utilizador
+      body:
+        application/json:
+          example: |
+            {
+              "name": "Novo Nome"
+            }
+      responses:
+        200:
+          body:
+            application/json:
+              type: User
+
+    delete:
+      is: [ commonResponses ]
+      description: Elimina utilizador
+      responses:
+        204:
+          description: Utilizador eliminado
+
+/ratings:
+  get:
+    is: [ commonResponses ]
+    description: Lista ratings por location_id ou user_id
+    queryParameters:
+      locationId:
+        type: integer
+        required: false
+      userId:
+        type: integer
+        required: false
+    responses:
+      200:
+        body:
+          application/json:
+            type: array
+            items: Rating
+            example: !include examples/ratings-list-example.json
+
+  post:
+    is: [ commonResponses ]
+    description: Submete novo rating
+    body:
+      application/json:
+        example: |
+          {
+            "userId": 42,
+            "locationId": 1,
+            "rating": 5,
+            "comment": "Incrível!"
+          }
+    responses:
+      201:
+        body:
+          application/json:
+            type: Rating
+            example: !include examples/rating-example.json
+
+  /{ratingId}:
+    patch:
+      is: [ commonResponses ]
+      description: Atualiza rating
+      body:
+        application/json:
+          example: |
+            {
+              "rating": 4,
+              "comment": "Comentario atualizado"
+            }
+      responses:
+        200:
+          body:
+            application/json:
+              type: Rating
+
+    delete:
+      is: [ commonResponses ]
+      description: Elimina rating
+      responses:
+        204:
+          description: Rating eliminado
+
+/ratings/summary:
+  get:
+    is: [ commonResponses ]
+    description: Obtem resumo de ratings (media e total)
+    queryParameters:
+      locationId:
+        type: integer
+        required: true
+    responses:
+      200:
+        body:
+          application/json:
+            example: !include examples/ratings-summary-example.json
+
+/favorites:
+  get:
+    is: [ commonResponses ]
+    description: Lista favoritos de um utilizador
+    queryParameters:
+      userId:
+        type: integer
+        required: true
+    responses:
+      200:
+        body:
+          application/json:
+            type: array
+            items: Favorite
+            example: !include examples/favorites-list-example.json
+
+  post:
+    is: [ commonResponses ]
+    description: Adiciona favorito
+    body:
+      application/json:
+        example: |
+          {
+            "userId": 42,
+            "locationId": 1
+          }
+    responses:
+      201:
+        body:
+          application/json:
+            type: Favorite
+            example: !include examples/favorite-example.json
+
+  /{favoriteId}:
+    delete:
+      is: [ commonResponses ]
+      description: Remove favorito
+      responses:
+        204:
+          description: Favorito removido
+
+/itineraries:
+  get:
+    is: [ commonResponses ]
+    description: Lista itinerarios de um utilizador
+    queryParameters:
+      userId:
+        type: integer
+        required: true
+    responses:
+      200:
+        body:
+          application/json:
+            type: array
+            items: Itinerary
+            example: !include examples/itineraries-list-example.json
+
+  post:
+    is: [ commonResponses ]
+    description: Cria novo itinerario
+    body:
+      application/json:
+        example: |
+          {
+            "userId": 42,
+            "name": "3 Dias São Miguel",
+            "startDate": "2025-12-01",
+            "endDate": "2025-12-03",
+            "locationIds": [1, 5, 12]
+          }
+    responses:
+      201:
+        body:
+          application/json:
+            type: Itinerary
+            example: !include examples/itinerary-example.json
+
+  /{itineraryId}:
+    get:
+      is: [ commonResponses ]
+      description: Obtem detalhes do itinerario
+      responses:
+        200:
+          body:
+            application/json:
+              type: Itinerary
+              example: !include examples/itinerary-example.json
+
+    patch:
+      is: [ commonResponses ]
+      description: Atualiza itinerario
+      body:
+        application/json:
+          example: |
+            {
+              "name": "Novo nome",
+              "locationIds": [1, 5, 12, 15]
+            }
+      responses:
+        200:
+          body:
+            application/json:
+              type: Itinerary
+
+    delete:
+      is: [ commonResponses ]
+      description: Elimina itinerario
+      responses:
+        204:
+          description: Itinerario eliminado
+
+/images:
+  get:
+    is: [ commonResponses ]
+    description: Obtem imagens de um local
+    queryParameters:
+      locationId:
+        type: integer
+        required: true
+    responses:
+      200:
+        body:
+          application/json:
+            type: array
+            items: LocationImage
+            example: !include examples/images-example.json
+
+  post:
+    is: [ commonResponses ]
+    description: Adiciona imagem
+    body:
+      application/json:
+        example: |
+          {
+            "locationId": 1,
+            "imageUrl": "https://example.com/image.jpg"
+          }
+    responses:
+      201:
+        body:
+          application/json:
+            type: LocationImage

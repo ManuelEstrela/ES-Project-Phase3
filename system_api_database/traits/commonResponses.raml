@@ -1,0 +1,38 @@
+#%RAML 1.0 Trait
+responses:
+  400:
+    description: Bad request - parametros invalidos
+    body:
+      application/json:
+        example:
+          {
+            "error": "Bad Request",
+            "message": "Missing or invalid parameter"
+          }
+  404:
+    description: Recurso nao encontrado
+    body:
+      application/json:
+        example:
+          {
+            "error": "Not Found",
+            "message": "Resource not found"
+          }
+  409:
+    description: Conflito - recurso ja existe
+    body:
+      application/json:
+        example:
+          {
+            "error": "Conflict",
+            "message": "Resource already exists"
+          }
+  500:
+    description: Erro interno do servidor
+    body:
+      application/json:
+        example:
+          {
+            "error": "Internal Server Error",
+            "message": "An unexpected error occurred"
+          }
