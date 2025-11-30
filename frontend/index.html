@@ -19,247 +19,247 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
 <body>
-    <!-- Header -->
-    <header>
-        <nav>
-            <div class="logo" onclick="showSection('home')">🏝️ Azores Uncharted</div>
-            <ul class="nav-links">
-                <li><a onclick="showSection('home')">Início</a></li>
-                <li><a onclick="showSection('islands')">Ilhas</a></li>
-                <li><a onclick="showSection('locations')">Locais</a></li>
-                <li><a onclick="showSection('itineraries')">Itinerários</a></li>
-                <li><a onclick="showSection('favorites')">Favoritos</a></li>
-            </ul>
-            <div class="auth-buttons" id="authButtons">
-                <button class="btn btn-outline" onclick="openModal('login')">Entrar</button>
-                <button class="btn btn-primary" onclick="openModal('register')">Registar</button>
+<!-- Header -->
+<header>
+    <nav>
+        <div class="logo" onclick="showSection('home')">🏝️ Azores Uncharted</div>
+        <ul class="nav-links">
+            <li><a onclick="showSection('home')">Início</a></li>
+            <li><a onclick="showSection('islands')">Ilhas</a></li>
+            <li><a onclick="showSection('locations')">Locais</a></li>
+            <li><a onclick="showSection('itineraries')">Itinerários</a></li>
+            <li><a onclick="showSection('favorites')">Favoritos</a></li>
+        </ul>
+        <div class="auth-buttons" id="authButtons">
+            <button class="btn btn-outline" onclick="openModal('login')">Entrar</button>
+            <button class="btn btn-primary" onclick="openModal('register')">Registar</button>
+        </div>
+        <div class="user-menu hidden" id="userMenu">
+            <div class="user-avatar" onclick="showSection('profile')">
+                <span id="userInitial">U</span>
             </div>
-            <div class="user-menu hidden" id="userMenu">
-                <div class="user-avatar" onclick="showSection('profile')">
-                    <span id="userInitial">U</span>
-                </div>
-            </div>
-        </nav>
-    </header>
+        </div>
+    </nav>
+</header>
 
-    <!-- Hero Section -->
-    <section class="hero">
-        <div class="hero-content">
-            <h1>Descubra os Açores</h1>
-            <p>Explore as maravilhas naturais de nove ilhas únicas</p>
-            <div class="search-bar">
-                <input
+<!-- Hero Section -->
+<section class="hero">
+    <div class="hero-content">
+        <h1>Descubra os Açores</h1>
+        <p>Explore as maravilhas naturais de nove ilhas únicas</p>
+        <div class="search-bar">
+            <input
                     type="text"
                     id="searchInput"
                     placeholder="Pesquisar locais, ilhas, categorias..."
                     onkeyup="searchLocations()"
-                >
-                <button class="btn btn-primary" onclick="searchLocations()">Pesquisar</button>
+            >
+            <button class="btn btn-primary" onclick="searchLocations()">Pesquisar</button>
+        </div>
+    </div>
+</section>
+
+<!-- Toast container -->
+<div id="toastContainer" class="toast-container"></div>
+
+<!-- Main Content -->
+<div class="container">
+    <!-- Home Section -->
+    <section id="homeSection">
+        <h2 class="section-title">Ilhas em Destaque</h2>
+        <div class="islands-grid" id="islandsGrid"></div>
+
+        <h2 class="section-title">Locais Populares</h2>
+        <div class="locations-grid" id="popularLocations"></div>
+    </section>
+
+    <!-- Islands Section -->
+    <section id="islandsSection" class="hidden">
+        <h2 class="section-title">Todas as Ilhas</h2>
+        <p class="section-subtitle">Selecione uma ilha para ver os melhores pontos turísticos.</p>
+        <div class="islands-grid" id="allIslandsGrid"></div>
+    </section>
+
+    <!-- Locations Section -->
+    <section id="locationsSection" class="hidden">
+        <h2 class="section-title">Pontos Turísticos</h2>
+        <div class="filters">
+            <select class="filter-select" id="islandFilter" onchange="filterLocations()">
+                <option value="">Todas as Ilhas</option>
+            </select>
+            <select class="filter-select" id="categoryFilter" onchange="filterLocations()">
+                <option value="">Todas as Categorias</option>
+                <option value="Miradouro">Miradouro</option>
+                <option value="Lagoa">Lagoa</option>
+                <option value="Termas">Termas</option>
+                <option value="Cascata">Cascata</option>
+                <option value="Praia">Praia</option>
+                <option value="Cidade">Cidade</option>
+            </select>
+        </div>
+        <div class="locations-grid" id="allLocations"></div>
+    </section>
+
+    <!-- Itineraries Section -->
+    <section id="itinerariesSection" class="hidden">
+        <h2 class="section-title">Itinerários</h2>
+        <p class="section-subtitle">Planeie viagens personalizadas com os seus pontos turísticos favoritos.</p>
+
+        <div class="itinerary-layout">
+            <!-- New Itinerary -->
+            <div class="itinerary-card">
+                <h3>Planear nova viagem</h3>
+                <form id="itineraryForm" onsubmit="saveItinerary(event)">
+                    <div class="form-group">
+                        <label>Nome do itinerário *</label>
+                        <input type="text" id="itineraryName" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Data de início</label>
+                            <input type="date" id="itineraryStart">
+                        </div>
+                        <div class="form-group">
+                            <label>Data de fim</label>
+                            <input type="date" id="itineraryEnd">
+                        </div>
+                    </div>
+                    <p class="muted">
+                        Adicione pontos ao itinerário através do botão
+                        <strong>“Adicionar ao itinerário”</strong> em cada local.
+                    </p>
+                    <div id="currentItineraryPoints" class="itinerary-points-list"></div>
+                    <div class="itinerary-actions">
+                        <button type="button" class="btn btn-outline" onclick="clearCurrentItinerary()">
+                            Limpar
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            Guardar itinerário
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Existing Itineraries -->
+            <div class="itinerary-card">
+                <h3>Os meus itinerários</h3>
+                <div id="itinerariesList" class="itineraries-list">
+                    <!-- Renderizado via JS -->
+                </div>
             </div>
         </div>
     </section>
 
-    <!-- Toast container -->
-    <div id="toastContainer" class="toast-container"></div>
+    <!-- Favorites Section -->
+    <section id="favoritesSection" class="hidden">
+        <h2 class="section-title">Favoritos</h2>
+        <p class="section-subtitle">
+            Pontos turísticos que marcou como favoritos para acesso rápido.
+        </p>
+        <div class="locations-grid" id="favoriteLocations"></div>
+    </section>
 
-    <!-- Main Content -->
-    <div class="container">
-        <!-- Home Section -->
-        <section id="homeSection">
-            <h2 class="section-title">Ilhas em Destaque</h2>
-            <div class="islands-grid" id="islandsGrid"></div>
-
-            <h2 class="section-title">Locais Populares</h2>
-            <div class="locations-grid" id="popularLocations"></div>
-        </section>
-
-        <!-- Islands Section -->
-        <section id="islandsSection" class="hidden">
-            <h2 class="section-title">Todas as Ilhas</h2>
-            <p class="section-subtitle">Selecione uma ilha para ver os melhores pontos turísticos.</p>
-            <div class="islands-grid" id="allIslandsGrid"></div>
-        </section>
-
-        <!-- Locations Section -->
-        <section id="locationsSection" class="hidden">
-            <h2 class="section-title">Pontos Turísticos</h2>
-            <div class="filters">
-                <select class="filter-select" id="islandFilter" onchange="filterLocations()">
-                    <option value="">Todas as Ilhas</option>
-                </select>
-                <select class="filter-select" id="categoryFilter" onchange="filterLocations()">
-                    <option value="">Todas as Categorias</option>
-                    <option value="Miradouro">Miradouro</option>
-                    <option value="Lagoa">Lagoa</option>
-                    <option value="Termas">Termas</option>
-                    <option value="Cascata">Cascata</option>
-                    <option value="Praia">Praia</option>
-                    <option value="Cidade">Cidade</option>
-                </select>
-            </div>
-            <div class="locations-grid" id="allLocations"></div>
-        </section>
-
-        <!-- Itineraries Section -->
-        <section id="itinerariesSection" class="hidden">
-            <h2 class="section-title">Itinerários</h2>
-            <p class="section-subtitle">Planeie viagens personalizadas com os seus pontos turísticos favoritos.</p>
-
-            <div class="itinerary-layout">
-                <!-- New Itinerary -->
-                <div class="itinerary-card">
-                    <h3>Planear nova viagem</h3>
-                    <form id="itineraryForm" onsubmit="saveItinerary(event)">
-                        <div class="form-group">
-                            <label>Nome do itinerário *</label>
-                            <input type="text" id="itineraryName" required>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Data de início</label>
-                                <input type="date" id="itineraryStart">
-                            </div>
-                            <div class="form-group">
-                                <label>Data de fim</label>
-                                <input type="date" id="itineraryEnd">
-                            </div>
-                        </div>
-                        <p class="muted">
-                            Adicione pontos ao itinerário através do botão
-                            <strong>“Adicionar ao itinerário”</strong> em cada local.
-                        </p>
-                        <div id="currentItineraryPoints" class="itinerary-points-list"></div>
-                        <div class="itinerary-actions">
-                            <button type="button" class="btn btn-outline" onclick="clearCurrentItinerary()">
-                                Limpar
-                            </button>
-                            <button type="submit" class="btn btn-primary">
-                                Guardar itinerário
-                            </button>
-                        </div>
-                    </form>
-                </div>
-
-                <!-- Existing Itineraries -->
-                <div class="itinerary-card">
-                    <h3>Os meus itinerários</h3>
-                    <div id="itinerariesList" class="itineraries-list">
-                        <!-- Renderizado via JS -->
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Favorites Section -->
-        <section id="favoritesSection" class="hidden">
-            <h2 class="section-title">Favoritos</h2>
-            <p class="section-subtitle">
-                Pontos turísticos que marcou como favoritos para acesso rápido.
+    <!-- Profile Section -->
+    <section id="profileSection" class="hidden">
+        <h2 class="section-title">Meu Perfil</h2>
+        <div class="profile-card">
+            <h3 id="profileName">Nome do Utilizador</h3>
+            <p id="profileEmail">email@example.com</p>
+            <p id="profilePreferences" class="muted">
+                As suas preferências serão carregadas após autenticação.
             </p>
-            <div class="locations-grid" id="favoriteLocations"></div>
-        </section>
-
-        <!-- Profile Section -->
-        <section id="profileSection" class="hidden">
-            <h2 class="section-title">Meu Perfil</h2>
-            <div class="profile-card">
-                <h3 id="profileName">Nome do Utilizador</h3>
-                <p id="profileEmail">email@example.com</p>
-                <p id="profilePreferences" class="muted">
-                    As suas preferências serão carregadas após autenticação.
-                </p>
-                <button class="btn btn-primary" style="margin-top: 1rem;" onclick="logout()">
-                    Terminar Sessão
-                </button>
-            </div>
-        </section>
-    </div>
-
-    <!-- Login Modal -->
-    <div class="modal" id="loginModal">
-        <div class="modal-content">
-            <button class="modal-close" onclick="closeModal('login')">&times;</button>
-            <h2 style="margin-bottom: 2rem;">Entrar</h2>
-            <form onsubmit="login(event)">
-                <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" id="loginEmail" required>
-                </div>
-                <div class="form-group">
-                    <label>Password</label>
-                    <input type="password" id="loginPassword" required>
-                </div>
-                <button type="submit" class="btn btn-primary" style="width: 100%;">Entrar</button>
-            </form>
+            <button class="btn btn-primary" style="margin-top: 1rem;" onclick="logout()">
+                Terminar Sessão
+            </button>
         </div>
-    </div>
+    </section>
+</div>
 
-    <!-- Register Modal -->
-    <div class="modal" id="registerModal">
-        <div class="modal-content">
-            <button class="modal-close" onclick="closeModal('register')">&times;</button>
-            <h2 style="margin-bottom: 2rem;">Registar</h2>
-            <form onsubmit="register(event)">
-                <div class="form-group">
-                    <label>Nome</label>
-                    <input type="text" id="registerName" required>
-                </div>
-                <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" id="registerEmail" required>
-                </div>
-                <div class="form-group">
-                    <label>Password</label>
-                    <input type="password" id="registerPassword" required>
-                </div>
-                <button type="submit" class="btn btn-primary" style="width: 100%;">Registar</button>
-            </form>
+<!-- Login Modal -->
+<div class="modal" id="loginModal">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeModal('login')">&times;</button>
+        <h2 style="margin-bottom: 2rem;">Entrar</h2>
+        <form onsubmit="login(event)">
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="loginEmail" required>
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="loginPassword" required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Entrar</button>
+        </form>
+    </div>
+</div>
+
+<!-- Register Modal -->
+<div class="modal" id="registerModal">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeModal('register')">&times;</button>
+        <h2 style="margin-bottom: 2rem;">Registar</h2>
+        <form onsubmit="register(event)">
+            <div class="form-group">
+                <label>Nome</label>
+                <input type="text" id="registerName" required>
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="registerEmail" required>
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="registerPassword" required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Registar</button>
+        </form>
+    </div>
+</div>
+
+<!-- Location Details Modal -->
+<div class="modal" id="locationModal">
+    <div class="modal-content modal-lg">
+        <button class="modal-close" onclick="closeLocationModal()">&times;</button>
+        <div id="locationModalContent">
+            <!-- Detalhes do local serão injetados via JS -->
         </div>
     </div>
+</div>
 
-    <!-- Location Details Modal -->
-    <div class="modal" id="locationModal">
-        <div class="modal-content modal-lg">
-            <button class="modal-close" onclick="closeLocationModal()">&times;</button>
-            <div id="locationModalContent">
-                <!-- Detalhes do local renderizados via JS -->
-            </div>
+<!-- Footer with Wave Effect -->
+<footer>
+    <div class="footer-content">
+        <div class="footer-section">
+            <h3>Azores Uncharted</h3>
+            <p>Descubra o paraíso natural dos Açores através das nove ilhas únicas que compõem este arquipélago extraordinário.</p>
+        </div>
+        <div class="footer-section">
+            <h3>Links Rápidos</h3>
+            <ul>
+                <li><a onclick="showSection('home')">Início</a></li>
+                <li><a onclick="showSection('islands')">Ilhas</a></li>
+                <li><a onclick="showSection('locations')">Locais</a></li>
+                <li><a onclick="openModal('register')">Registar</a></li>
+            </ul>
+        </div>
+        <div class="footer-section">
+            <h3>Contacto</h3>
+            <p>Email: info@azores_uncharted.pt</p>
+            <p>Tel: +351 295 000 000</p>
+            <p>Ponta Delgada, São Miguel</p>
         </div>
     </div>
+    <div class="footer-bottom">
+        <p>&copy; 2025 Azores Uncharted. Todos os direitos reservados.</p>
+    </div>
+</footer>
 
-    <!-- Footer with Wave Effect -->
-    <footer>
-        <div class="footer-content">
-            <div class="footer-section">
-                <h3>Azores Uncharted</h3>
-                <p>Descubra o paraíso natural dos Açores através das nove ilhas únicas que compõem este arquipélago extraordinário.</p>
-            </div>
-            <div class="footer-section">
-                <h3>Links Rápidos</h3>
-                <ul>
-                    <li><a onclick="showSection('home')">Início</a></li>
-                    <li><a onclick="showSection('islands')">Ilhas</a></li>
-                    <li><a onclick="showSection('locations')">Locais</a></li>
-                    <li><a onclick="openModal('register')">Registar</a></li>
-                </ul>
-            </div>
-            <div class="footer-section">
-                <h3>Contacto</h3>
-                <p>Email: info@azores_uncharted.pt</p>
-                <p>Tel: +351 295 000 000</p>
-                <p>Ponta Delgada, São Miguel</p>
-            </div>
-        </div>
-        <div class="footer-bottom">
-            <p>&copy; 2025 Azores Uncharted. Todos os direitos reservados.</p>
-        </div>
-    </footer>
+<!-- External Libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    <!-- External Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-    <!-- Scripts -->
-    <script src="js/app.js"></script>
+<!-- Scripts -->
+<script src="js/app.js"></script>
 </body>
 </html>
