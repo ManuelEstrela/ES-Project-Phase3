@@ -3,23 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Descubra os Açores - Plataforma de turismo dos Açores">
+    <meta name="description" content="Descubra os Açores - Plataforma de Turismo">
     <meta name="author" content="Group 2">
-    <title>Açores Tourism - Descubra os Açores</title>
+    <title>Azores Uncharted - Explore o Paraíso</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Styles -->
     <link rel="stylesheet" href="css/styles.css">
+
+    <!-- Map Library (Leaflet) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
 <body>
     <!-- Header -->
     <header>
         <nav>
-            <div class="logo">Açores Tourism</div>
+            <div class="logo" onclick="showSection('home')">🏝️ Azores Uncharted</div>
             <ul class="nav-links">
                 <li><a onclick="showSection('home')">Início</a></li>
                 <li><a onclick="showSection('islands')">Ilhas</a></li>
                 <li><a onclick="showSection('locations')">Locais</a></li>
-                <li><a onclick="showSection('itineraries')" class="hidden auth-required">Itinerários</a></li>
+                <li><a onclick="showSection('itineraries')">Itinerários</a></li>
+                <li><a onclick="showSection('favorites')">Favoritos</a></li>
             </ul>
             <div class="auth-buttons" id="authButtons">
                 <button class="btn btn-outline" onclick="openModal('login')">Entrar</button>
@@ -35,13 +44,23 @@
 
     <!-- Hero Section -->
     <section class="hero">
-        <h1>Descubra os Açores</h1>
-        <p>Explore as maravilhas naturais de nove ilhas únicas</p>
-        <div class="search-bar">
-            <input type="text" id="searchInput" placeholder="Pesquisar locais, ilhas, categorias..." onkeyup="searchLocations()">
-            <button class="btn btn-primary">Pesquisar</button>
+        <div class="hero-content">
+            <h1>Descubra os Açores</h1>
+            <p>Explore as maravilhas naturais de nove ilhas únicas</p>
+            <div class="search-bar">
+                <input
+                    type="text"
+                    id="searchInput"
+                    placeholder="Pesquisar locais, ilhas, categorias..."
+                    onkeyup="searchLocations()"
+                >
+                <button class="btn btn-primary" onclick="searchLocations()">Pesquisar</button>
+            </div>
         </div>
     </section>
+
+    <!-- Toast container -->
+    <div id="toastContainer" class="toast-container"></div>
 
     <!-- Main Content -->
     <div class="container">
@@ -57,6 +76,7 @@
         <!-- Islands Section -->
         <section id="islandsSection" class="hidden">
             <h2 class="section-title">Todas as Ilhas</h2>
+            <p class="section-subtitle">Selecione uma ilha para ver os melhores pontos turísticos.</p>
             <div class="islands-grid" id="allIslandsGrid"></div>
         </section>
 
@@ -80,17 +100,78 @@
             <div class="locations-grid" id="allLocations"></div>
         </section>
 
+        <!-- Itineraries Section -->
+        <section id="itinerariesSection" class="hidden">
+            <h2 class="section-title">Itinerários</h2>
+            <p class="section-subtitle">Planeie viagens personalizadas com os seus pontos turísticos favoritos.</p>
+
+            <div class="itinerary-layout">
+                <!-- New Itinerary -->
+                <div class="itinerary-card">
+                    <h3>Planear nova viagem</h3>
+                    <form id="itineraryForm" onsubmit="saveItinerary(event)">
+                        <div class="form-group">
+                            <label>Nome do itinerário *</label>
+                            <input type="text" id="itineraryName" required>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Data de início</label>
+                                <input type="date" id="itineraryStart">
+                            </div>
+                            <div class="form-group">
+                                <label>Data de fim</label>
+                                <input type="date" id="itineraryEnd">
+                            </div>
+                        </div>
+                        <p class="muted">
+                            Adicione pontos ao itinerário através do botão
+                            <strong>“Adicionar ao itinerário”</strong> em cada local.
+                        </p>
+                        <div id="currentItineraryPoints" class="itinerary-points-list"></div>
+                        <div class="itinerary-actions">
+                            <button type="button" class="btn btn-outline" onclick="clearCurrentItinerary()">
+                                Limpar
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                Guardar itinerário
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Existing Itineraries -->
+                <div class="itinerary-card">
+                    <h3>Os meus itinerários</h3>
+                    <div id="itinerariesList" class="itineraries-list">
+                        <!-- Renderizado via JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Favorites Section -->
+        <section id="favoritesSection" class="hidden">
+            <h2 class="section-title">Favoritos</h2>
+            <p class="section-subtitle">
+                Pontos turísticos que marcou como favoritos para acesso rápido.
+            </p>
+            <div class="locations-grid" id="favoriteLocations"></div>
+        </section>
+
         <!-- Profile Section -->
         <section id="profileSection" class="hidden">
             <h2 class="section-title">Meu Perfil</h2>
-            <div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: var(--shadow);">
+            <div class="profile-card">
                 <h3 id="profileName">Nome do Utilizador</h3>
                 <p id="profileEmail">email@example.com</p>
-                <button class="btn btn-primary" style="margin-top: 1rem;" onclick="logout()">Terminar Sessão</button>
+                <p id="profilePreferences" class="muted">
+                    As suas preferências serão carregadas após autenticação.
+                </p>
+                <button class="btn btn-primary" style="margin-top: 1rem;" onclick="logout()">
+                    Terminar Sessão
+                </button>
             </div>
-
-            <h3 class="section-title" style="margin-top: 2rem;">Meus Favoritos</h3>
-            <div class="locations-grid" id="favoritesGrid"></div>
         </section>
     </div>
 
@@ -136,31 +217,47 @@
         </div>
     </div>
 
-    <!-- Footer -->
+    <!-- Location Details Modal -->
+    <div class="modal" id="locationModal">
+        <div class="modal-content modal-lg">
+            <button class="modal-close" onclick="closeLocationModal()">&times;</button>
+            <div id="locationModalContent">
+                <!-- Detalhes do local renderizados via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer with Wave Effect -->
     <footer>
         <div class="footer-content">
             <div class="footer-section">
-                <h3>Açores Tourism</h3>
-                <p>Descubra o paraíso natural dos Açores</p>
+                <h3>Azores Uncharted</h3>
+                <p>Descubra o paraíso natural dos Açores através das nove ilhas únicas que compõem este arquipélago extraordinário.</p>
             </div>
             <div class="footer-section">
                 <h3>Links Rápidos</h3>
                 <ul>
-                    <li><a href="#home">Início</a></li>
-                    <li><a href="#islands">Ilhas</a></li>
-                    <li><a href="#locations">Locais</a></li>
+                    <li><a onclick="showSection('home')">Início</a></li>
+                    <li><a onclick="showSection('islands')">Ilhas</a></li>
+                    <li><a onclick="showSection('locations')">Locais</a></li>
+                    <li><a onclick="openModal('register')">Registar</a></li>
                 </ul>
             </div>
             <div class="footer-section">
                 <h3>Contacto</h3>
-                <p>Email: info@acorestourism.pt</p>
+                <p>Email: info@azores_uncharted.pt</p>
                 <p>Tel: +351 295 000 000</p>
+                <p>Ponta Delgada, São Miguel</p>
             </div>
         </div>
         <div class="footer-bottom">
-            <p>&copy; 2025 Açores Tourism. Todos os direitos reservados.</p>
+            <p>&copy; 2025 Azores Uncharted. Todos os direitos reservados.</p>
         </div>
     </footer>
+
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <!-- Scripts -->
     <script src="js/app.js"></script>
