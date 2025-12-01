@@ -21,6 +21,9 @@
     --bg-secondary: #f8fafc;
     --bg-tertiary: #f1f5f9;
 
+    --success: #16a34a;
+    --danger: #ef4444;
+
     --glass-bg: rgba(255, 255, 255, 0.7);
     --glass-border: rgba(255, 255, 255, 0.3);
 
@@ -765,6 +768,176 @@ nav {
     color: var(--text-secondary);
 }
 
+/* === Admin Panel === */
+
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.admin-header-title {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.admin-tag {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--text-secondary);
+}
+
+.admin-header-chip {
+    align-self: flex-start;
+}
+
+.admin-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1.1fr);
+    gap: 2rem;
+}
+
+.admin-column {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+@media (max-width: 992px) {
+    .admin-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.admin-card {
+    background: var(--bg-primary);
+    border-radius: var(--radius-2xl);
+    padding: 1.75rem 2rem;
+    box-shadow: var(--shadow-md);
+}
+
+.admin-card-header h3 {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    margin-bottom: 0.25rem;
+}
+
+.admin-card-subtitle {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.admin-form {
+    margin-top: 1.25rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--bg-tertiary);
+}
+
+.admin-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+}
+
+.table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.admin-table th,
+.admin-table td {
+    padding: 0.6rem 0.75rem;
+    border-bottom: 1px solid var(--bg-tertiary);
+    text-align: left;
+}
+
+.admin-table th {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-secondary);
+}
+
+.admin-table tr:hover {
+    background: rgba(15, 23, 42, 0.02);
+}
+
+/* Botões mais pequenos para ações da tabela */
+.btn-xs {
+    padding: 0.25rem 0.55rem;
+    font-size: 0.8rem;
+}
+
+.btn-danger {
+    background: var(--danger);
+    border-color: var(--danger);
+    color: #fff;
+}
+
+.btn-danger:hover {
+    filter: brightness(0.95);
+}
+
+/* Badges para integrações */
+
+.badge-success {
+    background: rgba(22, 163, 74, 0.12);
+    color: var(--success);
+}
+
+.badge-danger {
+    background: rgba(239, 68, 68, 0.12);
+    color: var(--danger);
+}
+
+.admin-integrations {
+    margin-top: 1rem;
+}
+
+.admin-integrations-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.integration-row {
+    padding: 0.6rem 0;
+    border-bottom: 1px dashed var(--bg-tertiary);
+}
+
+.integration-row:last-child {
+    border-bottom: none;
+}
+
+.integration-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.integration-name {
+    font-weight: 500;
+}
+
+.integration-message {
+    margin-top: 0.25rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
 /* === Location Details Modal Content === */
 .location-details-header {
     display: flex;
@@ -1093,5 +1266,104 @@ footer::after {
         top: auto;
         bottom: 1.5rem;
         right: 1rem;
+    }
+}
+
+/* === Scrollbar moderna === */
+
+html {
+    scroll-behavior: smooth;
+}
+
+/* Firefox */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary) var(--bg-secondary);
+}
+
+/* WebKit (Chrome, Edge, Safari) */
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.08);
+    border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, var(--primary), var(--secondary));
+    border-radius: 999px;
+    border: 2px solid rgba(15, 23, 42, 0.5);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, var(--primary-light), var(--secondary));
+}
+
+/* === Scroll Quick Actions === */
+
+.scroll-quick-actions {
+    position: fixed;
+    right: 0.35rem;           /* encostado à barra de scroll */
+    top: 50%;                 /* centrado verticalmente */
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;   /* botões lado a lado com a scroll bar (em coluna) */
+    gap: 0.55rem;
+    z-index: 999;
+}
+
+.scroll-btn {
+    width: 2.4rem;
+    height: 2.4rem;
+    border-radius: 999px;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 23, 42, 0.8);
+    color: #fff;
+    font-size: 1.1rem;
+    cursor: pointer;
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.35);
+    transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+    backdrop-filter: blur(8px);
+}
+
+.scroll-btn-main {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    font-size: 1.3rem;
+}
+
+.scroll-btn:hover {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    transform: translateY(-2px);
+    box-shadow: 0 16px 35px rgba(15, 23, 42, 0.5);
+}
+
+.scroll-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.35);
+}
+
+/* Mais compacto em mobile */
+@media (max-width: 768px) {
+    .scroll-quick-actions {
+        right: 1rem;
+        bottom: 1rem;
+        top: auto;
+        transform: none;
+        flex-direction: row;
+    }
+
+    .scroll-btn {
+        width: 2.2rem;
+        height: 2.2rem;
+        font-size: 1rem;
+    }
+
+    .scroll-btn-main {
+        font-size: 1.15rem;
     }
 }
