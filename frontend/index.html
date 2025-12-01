@@ -29,6 +29,12 @@
             <li><a onclick="showSection('locations')">Locais</a></li>
             <li><a onclick="showSection('itineraries')">Itinerários</a></li>
             <li><a onclick="showSection('favorites')">Favoritos</a></li>
+            <li id="adminNavItem" class="nav-item hidden">
+                <button class="nav-link" data-section="admin" onclick="openAdminPanel()">
+                    <span class="nav-icon">⚙️</span>
+                    <span>Painel Admin</span>
+                </button>
+            </li>
         </ul>
         <div class="auth-buttons" id="authButtons">
             <button class="btn btn-outline" onclick="openModal('login')">Entrar</button>
@@ -43,7 +49,7 @@
 </header>
 
 <!-- Hero Section -->
-<section class="hero">
+<section class="hero" id="heroSection">
     <div class="hero-content">
         <h1>Descubra os Açores</h1>
         <p>Explore as maravilhas naturais de nove ilhas únicas</p>
@@ -145,6 +151,183 @@
                 <h3>Os meus itinerários</h3>
                 <div id="itinerariesList" class="itineraries-list">
                     <!-- Renderizado via JS -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Admin Section -->
+    <section id="adminSection" class="hidden">
+        <div class="section-header admin-header">
+            <div class="admin-header-title">
+                <span class="admin-tag">Área reservada</span>
+                <h2 class="section-title">Painel do Administrador</h2>
+                <p class="section-subtitle">
+                    Gerir conteúdos turísticos, utilizadores da plataforma e monitorizar as integrações com os serviços externos.
+                </p>
+            </div>
+            <div class="admin-header-chip">
+                <span class="badge badge-outline">Azores Uncharted • Gestão</span>
+            </div>
+        </div>
+
+        <div class="admin-grid">
+            <!-- Coluna esquerda: Conteúdos + Integrações -->
+            <div class="admin-column">
+                <!-- Gerir Conteúdos -->
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h3>Gerir Conteúdos</h3>
+                        <p class="admin-card-subtitle">
+                            UC-13, UC-14, UC-15, UC-16, UC-17 — Criar, editar, listar e remover pontos turísticos.
+                        </p>
+                    </div>
+
+                    <form id="adminLocationForm" class="admin-form" onsubmit="submitAdminLocation(event)">
+                        <input type="hidden" id="adminLocationId">
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Nome do ponto turístico *</label>
+                                <input type="text" id="adminLocationName" required placeholder="Ex.: Lagoa das Sete Cidades">
+                            </div>
+                            <div class="form-group">
+                                <label>Ilha *</label>
+                                <input type="text" id="adminLocationIsland" required placeholder="Ex.: São Miguel">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Categoria</label>
+                                <input type="text" id="adminLocationCategory" placeholder="Ex.: Miradouro, Lagoa, Termas…">
+                            </div>
+                            <div class="form-group">
+                                <label>Imagem (URL)</label>
+                                <input type="url" id="adminLocationImage" placeholder="https://">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Descrição</label>
+                            <textarea id="adminLocationDescription" rows="2" placeholder="Breve descrição do ponto turístico."></textarea>
+                        </div>
+
+                        <div class="admin-form-actions">
+                            <button type="submit" class="btn btn-primary" id="adminLocationSaveBtn">
+                                Criar ponto turístico
+                            </button>
+                            <button type="button"
+                                    class="btn btn-outline hidden"
+                                    id="adminLocationCancelEditBtn"
+                                    onclick="cancelAdminLocationEdit()">
+                                Cancelar edição
+                            </button>
+                        </div>
+                    </form>
+
+                    <div class="table-wrapper">
+                        <table class="admin-table">
+                            <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nome</th>
+                                <th>Ilha</th>
+                                <th>Categoria</th>
+                                <th>Ações</th>
+                            </tr>
+                            </thead>
+                            <tbody id="adminLocationsTableBody">
+                            <!-- preenchido via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Monitorizar Integrações -->
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h3>Monitorizar Integrações</h3>
+                        <p class="admin-card-subtitle">
+                            UC-23 — Estado das integrações com Geoapify, Open-Meteo e base de dados.
+                        </p>
+                    </div>
+
+                    <div id="adminIntegrationsBody" class="admin-integrations">
+                        <!-- preenchido via JS -->
+                        <p class="muted">Clique em “Painel Admin” para verificar o estado das integrações.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coluna direita: Utilizadores -->
+            <div class="admin-column">
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h3>Gerir Utilizadores</h3>
+                        <p class="admin-card-subtitle">
+                            UC-18, UC-19, UC-20, UC-21, UC-22 — Criar, editar, listar e remover utilizadores.
+                        </p>
+                    </div>
+
+                    <form id="adminUserForm" class="admin-form" onsubmit="submitAdminUser(event)">
+                        <input type="hidden" id="adminUserId">
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Nome *</label>
+                                <input type="text" id="adminUserName" required placeholder="Nome completo">
+                            </div>
+                            <div class="form-group">
+                                <label>Email *</label>
+                                <input type="email" id="adminUserEmail" required placeholder="utilizador@exemplo.com">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Perfil / Role *</label>
+                                <select id="adminUserRole" required>
+                                    <option value="user">Utilizador</option>
+                                    <option value="admin">Administrador</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Password <span id="adminUserPasswordLabelExtra">(apenas para novos utilizadores)</span></label>
+                                <input type="password" id="adminUserPassword" placeholder="••••••••">
+                            </div>
+                        </div>
+
+                        <div class="admin-form-actions">
+                            <button type="submit" class="btn btn-primary" id="adminUserSaveBtn">
+                                Criar utilizador
+                            </button>
+                            <button type="button"
+                                    class="btn btn-outline hidden"
+                                    id="adminUserCancelEditBtn"
+                                    onclick="cancelAdminUserEdit()">
+                                Cancelar edição
+                            </button>
+                        </div>
+                    </form>
+
+                    <div class="table-wrapper">
+                        <table class="admin-table">
+                            <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nome</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Estado</th>
+                                <th>Ações</th>
+                            </tr>
+                            </thead>
+                            <tbody id="adminUsersTableBody">
+                            <!-- preenchido via JS -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -259,7 +442,46 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
+<!-- Scroll Quick Actions -->
+<div class="scroll-quick-actions">
+    <button
+            class="scroll-btn scroll-btn-main"
+            type="button"
+            onclick="window.scrollTo({ top: 0, behavior: 'smooth' });"
+            title="Voltar ao topo"
+    >
+        ↑
+    </button>
+
+    <button
+            class="scroll-btn"
+            type="button"
+            onclick="showSection('locations'); window.scrollTo({ top: 0, behavior: 'smooth' });"
+            title="Ir para Locais"
+    >
+        🗺
+    </button>
+
+    <button
+            class="scroll-btn"
+            type="button"
+            onclick="showSection('favorites'); window.scrollTo({ top: 0, behavior: 'smooth' });"
+            title="Ir para Favoritos"
+    >
+        ❤
+    </button>
+
+    <button
+            class="scroll-btn"
+            type="button"
+            onclick="showSection('itineraries'); window.scrollTo({ top: 0, behavior: 'smooth' });"
+            title="Ir para Itinerários"
+    >
+        ✈
+    </button>
+</div>
+
 <!-- Scripts -->
-<script src="js/app.js"></script>
+<script type="module" src="js/main.js"></script>
 </body>
 </html>
