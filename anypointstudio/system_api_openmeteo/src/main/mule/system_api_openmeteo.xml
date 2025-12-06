@@ -12,18 +12,33 @@ http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/m
 http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd 
 http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/mule/api-gateway/current/mule-api-gateway.xsd">
     
+    <!-- HTTP Listener Config -->
     <http:listener-config name="system_api_openmeteo-httpListenerConfig">
         <http:listener-connection host="0.0.0.0" port="8081" />
     </http:listener-config>
     
+    <!-- HTTP Request Config for Open-Meteo API -->
     <http:request-config name="OpenMeteo_HTTP_Request_Config" doc:name="HTTP Request configuration">
-        <http:request-connection host="api.open-meteo.com" protocol="HTTPS"/>
+        <http:request-connection host="api.open-meteo.com" protocol="HTTPS" />
     </http:request-config>
     
-    <apikit:config name="system_api_openmeteo-config" api="resource::1782ea4a-5a87-4bb9-8106-5f1c978c57b1:system_api_openmeteo:1.0.0:raml:zip:system_api_openmeteo.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
-    <api-gateway:autodiscovery apiId="20617163" ignoreBasePath="true" doc:name="API Autodiscovery" doc:id="a1a25b59-08ae-46b0-83df-cb375759b198" flowRef="system_api_openmeteo-main" />
+    <!-- APIKit Config -->
+    <apikit:config name="system_api_openmeteo-config" 
+                   api="resource::1782ea4a-5a87-4bb9-8106-5f1c978c57b1:system_api_openmeteo:1.0.0:raml:zip:system_api_openmeteo.raml" 
+                   outboundHeadersMapName="outboundHeaders" 
+                   httpStatusVarName="httpStatus" />
     
-	<flow name="system_api_openmeteo-main">
+    <!-- API Autodiscovery -->
+    <!--
+    <api-gateway:autodiscovery apiId="20617163" 
+                               ignoreBasePath="true" 
+                               doc:name="API Autodiscovery" 
+                               doc:id="3ce51771-379d-44e8-b588-0bb2042028f7" 
+                               flowRef="system_api_openmeteo-main" />
+    -->
+    
+    <!-- Main Flow -->
+    <flow name="system_api_openmeteo-main">
         <http:listener config-ref="system_api_openmeteo-httpListenerConfig" path="/api/*">
             <http:response statusCode="#[vars.httpStatus default 200]">
                 <http:headers>#[vars.outboundHeaders default {}]</http:headers>
@@ -116,6 +131,7 @@ output application/json
         </error-handler>
     </flow>
     
+    <!-- Console Flow -->
     <flow name="system_api_openmeteo-console">
         <http:listener config-ref="system_api_openmeteo-httpListenerConfig" path="/console/*">
             <http:response statusCode="#[vars.httpStatus default 200]">
@@ -144,43 +160,30 @@ output application/json
         </error-handler>
     </flow>
     
+    <!-- GET /current endpoint - REAL API CALL -->
     <flow name="get:\current:system_api_openmeteo-config">
-        <logger level="INFO" doc:name="Log Request" message="#['Fetching current weather for lat: ' ++ attributes.queryParams.latitude ++ ', lon: ' ++ attributes.queryParams.longitude]"/>
+        <logger level="INFO" doc:name="Log Request" 
+                message="#['Fetching current weather for lat: ' ++ attributes.queryParams.latitude ++ ', lon: ' ++ attributes.queryParams.longitude]"/>
         
-        <ee:transform doc:name="Prepare Request Variables">
-            <ee:variables>
-                <ee:set-variable variableName="latitude"><![CDATA[%dw 2.0
-output application/java
----
-attributes.queryParams.latitude]]></ee:set-variable>
-                <ee:set-variable variableName="longitude"><![CDATA[%dw 2.0
-output application/java
----
-attributes.queryParams.longitude]]></ee:set-variable>
-                <ee:set-variable variableName="current"><![CDATA[%dw 2.0
-output application/java
----
-attributes.queryParams.current default "temperature_2m,windspeed_10m,weathercode,winddirection_10m,relative_humidity_2m,apparent_temperature,precipitation,cloudcover"]]></ee:set-variable>
-                <ee:set-variable variableName="timezone"><![CDATA[%dw 2.0
-output application/java
----
-attributes.queryParams.timezone default "Atlantic/Azores"]]></ee:set-variable>
-            </ee:variables>
-        </ee:transform>
-        
-        <http:request method="GET" config-ref="OpenMeteo_HTTP_Request_Config" path="/v1/forecast" doc:name="Call Open-Meteo API">
+        <!-- Call Open-Meteo API -->
+        <http:request method="GET" 
+                     config-ref="OpenMeteo_HTTP_Request_Config" 
+                     path="/v1/forecast" 
+                     doc:name="Call Open-Meteo API">
             <http:query-params><![CDATA[#[output application/java
 ---
 {
-    "latitude" : vars.latitude,
-    "longitude" : vars.longitude,
-    "current" : vars.current,
-    "timezone" : vars.timezone
+    "latitude": attributes.queryParams.latitude,
+    "longitude": attributes.queryParams.longitude,
+    "current": attributes.queryParams.current default "temperature_2m,windspeed_10m,weathercode,winddirection_10m,relative_humidity_2m,apparent_temperature,precipitation,cloudcover",
+    "timezone": attributes.queryParams.timezone default "Atlantic/Azores"
 }]]]></http:query-params>
         </http:request>
         
-        <logger level="INFO" doc:name="Log Response" message="#['Received weather data successfully']"/>
+        <logger level="INFO" doc:name="Log Success" 
+                message="#['Successfully retrieved weather data']"/>
         
+        <!-- Return the response as-is -->
         <ee:transform doc:name="Transform Response">
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
@@ -189,111 +192,33 @@ output application/json
 payload]]></ee:set-payload>
             </ee:message>
         </ee:transform>
-        
-        <error-handler>
-            <on-error-propagate type="HTTP:BAD_REQUEST, HTTP:NOT_FOUND">
-                <logger level="ERROR" doc:name="Log Error" message="#['Error calling Open-Meteo API: ' ++ error.description]"/>
-                <ee:transform doc:name="Transform Error Response">
-                    <ee:message>
-                        <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-    error: true,
-    reason: "Invalid request parameters",
-    details: error.description
-}]]></ee:set-payload>
-                    </ee:message>
-                    <ee:variables>
-                        <ee:set-variable variableName="httpStatus">400</ee:set-variable>
-                    </ee:variables>
-                </ee:transform>
-            </on-error-propagate>
-            <on-error-propagate type="HTTP:TIMEOUT, HTTP:CONNECTIVITY">
-                <logger level="ERROR" doc:name="Log Connection Error" message="#['Connection error to Open-Meteo API: ' ++ error.description]"/>
-                <ee:transform doc:name="Transform Error Response">
-                    <ee:message>
-                        <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-    error: true,
-    reason: "Service temporarily unavailable",
-    details: error.description
-}]]></ee:set-payload>
-                    </ee:message>
-                    <ee:variables>
-                        <ee:set-variable variableName="httpStatus">503</ee:set-variable>
-                    </ee:variables>
-                </ee:transform>
-            </on-error-propagate>
-            <on-error-propagate type="ANY">
-                <logger level="ERROR" doc:name="Log Any Error" message="#['Unexpected error: ' ++ error.description]"/>
-                <ee:transform doc:name="Transform Error Response">
-                    <ee:message>
-                        <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-    error: true,
-    reason: "Internal server error",
-    details: error.description
-}]]></ee:set-payload>
-                    </ee:message>
-                    <ee:variables>
-                        <ee:set-variable variableName="httpStatus">500</ee:set-variable>
-                    </ee:variables>
-                </ee:transform>
-            </on-error-propagate>
-        </error-handler>
     </flow>
     
+    <!-- GET /forecast endpoint - REAL API CALL -->
     <flow name="get:\forecast:system_api_openmeteo-config">
-        <logger level="INFO" doc:name="Log Request" message="#['Fetching forecast for lat: ' ++ attributes.queryParams.latitude ++ ', lon: ' ++ attributes.queryParams.longitude]"/>
+        <logger level="INFO" doc:name="Log Request" 
+                message="#['Fetching forecast for lat: ' ++ attributes.queryParams.latitude ++ ', lon: ' ++ attributes.queryParams.longitude]"/>
         
-        <ee:transform doc:name="Prepare Request Variables">
-            <ee:variables>
-                <ee:set-variable variableName="latitude"><![CDATA[%dw 2.0
-output application/java
----
-attributes.queryParams.latitude]]></ee:set-variable>
-                <ee:set-variable variableName="longitude"><![CDATA[%dw 2.0
-output application/java
----
-attributes.queryParams.longitude]]></ee:set-variable>
-                <ee:set-variable variableName="forecastDays"><![CDATA[%dw 2.0
-output application/java
----
-attributes.queryParams.forecast_days default "7"]]></ee:set-variable>
-                <ee:set-variable variableName="hourly"><![CDATA[%dw 2.0
-output application/java
----
-attributes.queryParams.hourly]]></ee:set-variable>
-                <ee:set-variable variableName="daily"><![CDATA[%dw 2.0
-output application/java
----
-attributes.queryParams.daily]]></ee:set-variable>
-                <ee:set-variable variableName="timezone"><![CDATA[%dw 2.0
-output application/java
----
-attributes.queryParams.timezone default "Atlantic/Azores"]]></ee:set-variable>
-            </ee:variables>
-        </ee:transform>
-        
-        <http:request method="GET" config-ref="OpenMeteo_HTTP_Request_Config" path="/v1/forecast" doc:name="Call Open-Meteo API">
+        <!-- Call Open-Meteo API -->
+        <http:request method="GET" 
+                     config-ref="OpenMeteo_HTTP_Request_Config" 
+                     path="/v1/forecast" 
+                     doc:name="Call Open-Meteo API">
             <http:query-params><![CDATA[#[output application/java
 ---
 {
-    "latitude" : vars.latitude,
-    "longitude" : vars.longitude,
-    "forecast_days" : vars.forecastDays,
-    "timezone" : vars.timezone
-} ++ (if (!isEmpty(vars.hourly)) {"hourly": vars.hourly} else {})
-  ++ (if (!isEmpty(vars.daily)) {"daily": vars.daily} else {})]]]></http:query-params>
+    "latitude": attributes.queryParams.latitude,
+    "longitude": attributes.queryParams.longitude,
+    "forecast_days": attributes.queryParams.forecast_days default "7",
+    "timezone": attributes.queryParams.timezone default "Atlantic/Azores"
+} ++ (if (!isEmpty(attributes.queryParams.hourly)) {"hourly": attributes.queryParams.hourly} else {})
+  ++ (if (!isEmpty(attributes.queryParams.daily)) {"daily": attributes.queryParams.daily} else {})]]]></http:query-params>
         </http:request>
         
-        <logger level="INFO" doc:name="Log Response" message="#['Forecast data retrieved successfully']"/>
+        <logger level="INFO" doc:name="Log Success" 
+                message="#['Successfully retrieved forecast data']"/>
         
+        <!-- Return the response as-is -->
         <ee:transform doc:name="Transform Response">
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
@@ -302,87 +227,33 @@ output application/json
 payload]]></ee:set-payload>
             </ee:message>
         </ee:transform>
-        
-        <error-handler>
-            <on-error-propagate type="HTTP:BAD_REQUEST, HTTP:NOT_FOUND">
-                <logger level="ERROR" doc:name="Log Error" message="#['Error calling Open-Meteo API: ' ++ error.description]"/>
-                <ee:transform doc:name="Transform Error Response">
-                    <ee:message>
-                        <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-    error: true,
-    reason: "Invalid request parameters"
-}]]></ee:set-payload>
-                    </ee:message>
-                    <ee:variables>
-                        <ee:set-variable variableName="httpStatus">400</ee:set-variable>
-                    </ee:variables>
-                </ee:transform>
-            </on-error-propagate>
-            <on-error-propagate type="HTTP:TIMEOUT, HTTP:CONNECTIVITY">
-                <logger level="ERROR" doc:name="Log Connection Error" message="#['Connection error to Open-Meteo API: ' ++ error.description]"/>
-                <ee:transform doc:name="Transform Error Response">
-                    <ee:message>
-                        <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-    error: true,
-    reason: "Service temporarily unavailable"
-}]]></ee:set-payload>
-                    </ee:message>
-                    <ee:variables>
-                        <ee:set-variable variableName="httpStatus">503</ee:set-variable>
-                    </ee:variables>
-                </ee:transform>
-            </on-error-propagate>
-        </error-handler>
     </flow>
     
+    <!-- GET /hourly endpoint - REAL API CALL -->
     <flow name="get:\hourly:system_api_openmeteo-config">
-        <logger level="INFO" doc:name="Log Request" message="#['Fetching hourly forecast for lat: ' ++ attributes.queryParams.latitude ++ ', lon: ' ++ attributes.queryParams.longitude]"/>
+        <logger level="INFO" doc:name="Log Request" 
+                message="#['Fetching hourly forecast for lat: ' ++ attributes.queryParams.latitude ++ ', lon: ' ++ attributes.queryParams.longitude]"/>
         
-        <ee:transform doc:name="Prepare Request Variables">
-            <ee:variables>
-                <ee:set-variable variableName="latitude"><![CDATA[%dw 2.0
-output application/java
----
-attributes.queryParams.latitude]]></ee:set-variable>
-                <ee:set-variable variableName="longitude"><![CDATA[%dw 2.0
-output application/java
----
-attributes.queryParams.longitude]]></ee:set-variable>
-                <ee:set-variable variableName="forecastHours"><![CDATA[%dw 2.0
-output application/java
----
-attributes.queryParams.forecast_hours default "48"]]></ee:set-variable>
-                <ee:set-variable variableName="hourly"><![CDATA[%dw 2.0
-output application/java
----
-attributes.queryParams.hourly default "temperature_2m,precipitation,windspeed_10m,winddirection_10m,weathercode,relative_humidity_2m,cloudcover"]]></ee:set-variable>
-                <ee:set-variable variableName="timezone"><![CDATA[%dw 2.0
-output application/java
----
-attributes.queryParams.timezone default "Atlantic/Azores"]]></ee:set-variable>
-            </ee:variables>
-        </ee:transform>
-        
-        <http:request method="GET" config-ref="OpenMeteo_HTTP_Request_Config" path="/v1/forecast" doc:name="Call Open-Meteo API">
+        <!-- Call Open-Meteo API -->
+        <http:request method="GET" 
+                     config-ref="OpenMeteo_HTTP_Request_Config" 
+                     path="/v1/forecast" 
+                     doc:name="Call Open-Meteo API">
             <http:query-params><![CDATA[#[output application/java
 ---
 {
-    "latitude" : vars.latitude,
-    "longitude" : vars.longitude,
-    "hourly" : vars.hourly,
-    "forecast_hours" : vars.forecastHours,
-    "timezone" : vars.timezone
+    "latitude": attributes.queryParams.latitude,
+    "longitude": attributes.queryParams.longitude,
+    "hourly": attributes.queryParams.hourly default "temperature_2m,precipitation,windspeed_10m,winddirection_10m,weathercode,relative_humidity_2m,cloudcover",
+    "forecast_hours": attributes.queryParams.forecast_hours default "48",
+    "timezone": attributes.queryParams.timezone default "Atlantic/Azores"
 }]]]></http:query-params>
         </http:request>
         
-        <logger level="INFO" doc:name="Log Response" message="#['Hourly forecast retrieved successfully']"/>
+        <logger level="INFO" doc:name="Log Success" 
+                message="#['Successfully retrieved hourly forecast']"/>
         
+        <!-- Extract only hourly data -->
         <ee:transform doc:name="Extract Hourly Data">
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
@@ -391,87 +262,33 @@ output application/json
 payload.hourly]]></ee:set-payload>
             </ee:message>
         </ee:transform>
-        
-        <error-handler>
-            <on-error-propagate type="HTTP:BAD_REQUEST, HTTP:NOT_FOUND">
-                <logger level="ERROR" doc:name="Log Error" message="#['Error calling Open-Meteo API: ' ++ error.description]"/>
-                <ee:transform doc:name="Transform Error Response">
-                    <ee:message>
-                        <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-    error: true,
-    reason: "Invalid request parameters"
-}]]></ee:set-payload>
-                    </ee:message>
-                    <ee:variables>
-                        <ee:set-variable variableName="httpStatus">400</ee:set-variable>
-                    </ee:variables>
-                </ee:transform>
-            </on-error-propagate>
-            <on-error-propagate type="HTTP:TIMEOUT, HTTP:CONNECTIVITY">
-                <logger level="ERROR" doc:name="Log Connection Error" message="#['Connection error to Open-Meteo API: ' ++ error.description]"/>
-                <ee:transform doc:name="Transform Error Response">
-                    <ee:message>
-                        <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-    error: true,
-    reason: "Service temporarily unavailable"
-}]]></ee:set-payload>
-                    </ee:message>
-                    <ee:variables>
-                        <ee:set-variable variableName="httpStatus">503</ee:set-variable>
-                    </ee:variables>
-                </ee:transform>
-            </on-error-propagate>
-        </error-handler>
     </flow>
     
+    <!-- GET /daily endpoint - REAL API CALL -->
     <flow name="get:\daily:system_api_openmeteo-config">
-        <logger level="INFO" doc:name="Log Request" message="#['Fetching daily forecast for lat: ' ++ attributes.queryParams.latitude ++ ', lon: ' ++ attributes.queryParams.longitude]"/>
+        <logger level="INFO" doc:name="Log Request" 
+                message="#['Fetching daily forecast for lat: ' ++ attributes.queryParams.latitude ++ ', lon: ' ++ attributes.queryParams.longitude]"/>
         
-        <ee:transform doc:name="Prepare Request Variables">
-            <ee:variables>
-                <ee:set-variable variableName="latitude"><![CDATA[%dw 2.0
-output application/java
----
-attributes.queryParams.latitude]]></ee:set-variable>
-                <ee:set-variable variableName="longitude"><![CDATA[%dw 2.0
-output application/java
----
-attributes.queryParams.longitude]]></ee:set-variable>
-                <ee:set-variable variableName="forecastDays"><![CDATA[%dw 2.0
-output application/java
----
-attributes.queryParams.forecast_days default "7"]]></ee:set-variable>
-                <ee:set-variable variableName="daily"><![CDATA[%dw 2.0
-output application/java
----
-attributes.queryParams.daily default "temperature_2m_max,temperature_2m_min,precipitation_sum,windspeed_10m_max,weathercode,sunrise,sunset"]]></ee:set-variable>
-                <ee:set-variable variableName="timezone"><![CDATA[%dw 2.0
-output application/java
----
-attributes.queryParams.timezone default "Atlantic/Azores"]]></ee:set-variable>
-            </ee:variables>
-        </ee:transform>
-        
-        <http:request method="GET" config-ref="OpenMeteo_HTTP_Request_Config" path="/v1/forecast" doc:name="Call Open-Meteo API">
+        <!-- Call Open-Meteo API -->
+        <http:request method="GET" 
+                     config-ref="OpenMeteo_HTTP_Request_Config" 
+                     path="/v1/forecast" 
+                     doc:name="Call Open-Meteo API">
             <http:query-params><![CDATA[#[output application/java
 ---
 {
-    "latitude" : vars.latitude,
-    "longitude" : vars.longitude,
-    "daily" : vars.daily,
-    "forecast_days" : vars.forecastDays,
-    "timezone" : vars.timezone
+    "latitude": attributes.queryParams.latitude,
+    "longitude": attributes.queryParams.longitude,
+    "daily": attributes.queryParams.daily default "temperature_2m_max,temperature_2m_min,precipitation_sum,windspeed_10m_max,weathercode,sunrise,sunset",
+    "forecast_days": attributes.queryParams.forecast_days default "7",
+    "timezone": attributes.queryParams.timezone default "Atlantic/Azores"
 }]]]></http:query-params>
         </http:request>
         
-        <logger level="INFO" doc:name="Log Response" message="#['Daily forecast retrieved successfully']"/>
+        <logger level="INFO" doc:name="Log Success" 
+                message="#['Successfully retrieved daily forecast']"/>
         
+        <!-- Extract only daily data -->
         <ee:transform doc:name="Extract Daily Data">
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
@@ -480,42 +297,5 @@ output application/json
 payload.daily]]></ee:set-payload>
             </ee:message>
         </ee:transform>
-        
-        <error-handler>
-            <on-error-propagate type="HTTP:BAD_REQUEST, HTTP:NOT_FOUND">
-                <logger level="ERROR" doc:name="Log Error" message="#['Error calling Open-Meteo API: ' ++ error.description]"/>
-                <ee:transform doc:name="Transform Error Response">
-                    <ee:message>
-                        <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-    error: true,
-    reason: "Invalid request parameters"
-}]]></ee:set-payload>
-                    </ee:message>
-                    <ee:variables>
-                        <ee:set-variable variableName="httpStatus">400</ee:set-variable>
-                    </ee:variables>
-                </ee:transform>
-            </on-error-propagate>
-            <on-error-propagate type="HTTP:TIMEOUT, HTTP:CONNECTIVITY">
-                <logger level="ERROR" doc:name="Log Connection Error" message="#['Connection error to Open-Meteo API: ' ++ error.description]"/>
-                <ee:transform doc:name="Transform Error Response">
-                    <ee:message>
-                        <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-    error: true,
-    reason: "Service temporarily unavailable"
-}]]></ee:set-payload>
-                    </ee:message>
-                    <ee:variables>
-                        <ee:set-variable variableName="httpStatus">503</ee:set-variable>
-                    </ee:variables>
-                </ee:transform>
-            </on-error-propagate>
-        </error-handler>
     </flow>
 </mule>
