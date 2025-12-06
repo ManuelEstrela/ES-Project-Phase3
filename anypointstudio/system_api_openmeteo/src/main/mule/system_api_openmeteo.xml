@@ -17,7 +17,7 @@ http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/m
     </http:listener-config>
     
     <http:request-config name="OpenMeteo_HTTP_Request_Config" doc:name="HTTP Request configuration">
-        <http:request-connection host="api.open-meteo.com" protocol="HTTPS" />
+        <http:request-connection host="api.open-meteo.com" protocol="HTTPS"/>
     </http:request-config>
     
     <apikit:config name="system_api_openmeteo-config" api="resource::1782ea4a-5a87-4bb9-8106-5f1c978c57b1:system_api_openmeteo:1.0.0:raml:zip:system_api_openmeteo.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
