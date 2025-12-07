@@ -1,13 +1,34 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<mule xmlns:api-gateway="http://www.mulesoft.org/schema/mule/api-gateway" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd 
-http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/mule/api-gateway/current/mule-api-gateway.xsd">
-    <http:listener-config name="process_api-httpListenerConfig">
-        <http:listener-connection host="0.0.0.0" port="8081" />
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http"
+      xmlns="http://www.mulesoft.org/schema/mule/core" 
+      xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" 
+      xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" 
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+      xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd 
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd 
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+    
+    <!-- HTTP Listener Configuration - PORT 8084 -->
+    <http:listener-config name="process-api-httpListenerConfig">
+        <http:listener-connection host="0.0.0.0" port="8084" />
     </http:listener-config>
-    <apikit:config name="process_api-config" api="resource::1782ea4a-5a87-4bb9-8106-5f1c978c57b1:process_api:1.0.0:raml:zip:process_api.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
-    <api-gateway:autodiscovery apiId="20617157" ignoreBasePath="true" doc:name="API Autodiscovery" doc:id="4deff29e-24b3-4bbd-9645-754b86bcf036" flowRef="process_api-main" />
-	<flow name="process_api-main">
-        <http:listener config-ref="process_api-httpListenerConfig" path="/api/*">
+    
+    <!-- HTTP Request Configurations for System APIs -->
+    <http:request-config name="Database_API_Config">
+        <http:request-connection host="localhost" port="8083" />
+    </http:request-config>
+    
+    <http:request-config name="OpenMeteo_API_Config">
+        <http:request-connection host="localhost" port="8081" />
+    </http:request-config>
+    
+    <http:request-config name="Geoapify_API_Config">
+        <http:request-connection host="localhost" port="8082" />
+    </http:request-config>
+    
+    <!-- Main Flow -->
+    <flow name="process-api-main">
+        <http:listener config-ref="process-api-httpListenerConfig" path="/api/*">
             <http:response statusCode="#[vars.httpStatus default 200]">
                 <http:headers>#[vars.outboundHeaders default {}]</http:headers>
             </http:response>
@@ -16,235 +37,269 @@ http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/m
                 <http:headers>#[vars.outboundHeaders default {}]</http:headers>
             </http:error-response>
         </http:listener>
-        <apikit:router config-ref="process_api-config" />
-        <error-handler>
-            <on-error-propagate type="APIKIT:BAD_REQUEST">
-                <ee:transform doc:name="Transform Message">
+        
+        <choice doc:name="Route Request">
+            <!-- GET /locations -->
+            <when expression="#[attributes.method == 'GET' and attributes.requestPath == '/api/locations']">
+                <flow-ref name="process-get-locations" />
+            </when>
+            <!-- GET /locations/{id} -->
+            <when expression="#[attributes.method == 'GET' and attributes.requestPath matches /\/api\/locations\/\d+/]">
+                <flow-ref name="process-get-location-by-id" />
+            </when>
+            <!-- GET /locations/{id}/weather -->
+            <when expression="#[attributes.method == 'GET' and attributes.requestPath matches /\/api\/locations\/\d+\/weather/]">
+                <flow-ref name="process-get-location-weather" />
+            </when>
+            <!-- GET /itineraries -->
+            <when expression="#[attributes.method == 'GET' and attributes.requestPath == '/api/itineraries']">
+                <flow-ref name="process-get-itineraries" />
+            </when>
+            <!-- POST /itineraries -->
+            <when expression="#[attributes.method == 'POST' and attributes.requestPath == '/api/itineraries']">
+                <flow-ref name="process-post-itinerary" />
+            </when>
+            <!-- GET /itineraries/{id} -->
+            <when expression="#[attributes.method == 'GET' and attributes.requestPath matches /\/api\/itineraries\/\d+/]">
+                <flow-ref name="process-get-itinerary-by-id" />
+            </when>
+            <!-- GET /ratings -->
+            <when expression="#[attributes.method == 'GET' and attributes.requestPath == '/api/ratings']">
+                <flow-ref name="process-get-ratings" />
+            </when>
+            <!-- POST /ratings -->
+            <when expression="#[attributes.method == 'POST' and attributes.requestPath == '/api/ratings']">
+                <flow-ref name="process-post-rating" />
+            </when>
+            <!-- GET /favorites -->
+            <when expression="#[attributes.method == 'GET' and attributes.requestPath == '/api/favorites']">
+                <flow-ref name="process-get-favorites" />
+            </when>
+            <!-- POST /favorites -->
+            <when expression="#[attributes.method == 'POST' and attributes.requestPath == '/api/favorites']">
+                <flow-ref name="process-post-favorite" />
+            </when>
+            <!-- DELETE /favorites/{id} -->
+            <when expression="#[attributes.method == 'DELETE' and attributes.requestPath matches /\/api\/favorites\/\d+/]">
+                <flow-ref name="process-delete-favorite" />
+            </when>
+            <!-- Default: Not Found -->
+            <otherwise>
+                <ee:transform>
                     <ee:message>
                         <ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
-{message: "Bad request"}]]></ee:set-payload>
-                    </ee:message>
-                    <ee:variables>
-                        <ee:set-variable variableName="httpStatus">400</ee:set-variable>
-                    </ee:variables>
-                </ee:transform>
-            </on-error-propagate>
-            <on-error-propagate type="APIKIT:NOT_FOUND">
-                <ee:transform doc:name="Transform Message">
-                    <ee:message>
-                        <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{message: "Resource not found"}]]></ee:set-payload>
-                    </ee:message>
-                    <ee:variables>
-                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
-                    </ee:variables>
-                </ee:transform>
-            </on-error-propagate>
-            <on-error-propagate type="APIKIT:METHOD_NOT_ALLOWED">
-                <ee:transform doc:name="Transform Message">
-                    <ee:message>
-                        <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{message: "Method not allowed"}]]></ee:set-payload>
-                    </ee:message>
-                    <ee:variables>
-                        <ee:set-variable variableName="httpStatus">405</ee:set-variable>
-                    </ee:variables>
-                </ee:transform>
-            </on-error-propagate>
-            <on-error-propagate type="APIKIT:NOT_ACCEPTABLE">
-                <ee:transform doc:name="Transform Message">
-                    <ee:message>
-                        <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{message: "Not acceptable"}]]></ee:set-payload>
-                    </ee:message>
-                    <ee:variables>
-                        <ee:set-variable variableName="httpStatus">406</ee:set-variable>
-                    </ee:variables>
-                </ee:transform>
-            </on-error-propagate>
-            <on-error-propagate type="APIKIT:UNSUPPORTED_MEDIA_TYPE">
-                <ee:transform doc:name="Transform Message">
-                    <ee:message>
-                        <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{message: "Unsupported media type"}]]></ee:set-payload>
-                    </ee:message>
-                    <ee:variables>
-                        <ee:set-variable variableName="httpStatus">415</ee:set-variable>
-                    </ee:variables>
-                </ee:transform>
-            </on-error-propagate>
-            <on-error-propagate type="APIKIT:NOT_IMPLEMENTED">
-                <ee:transform doc:name="Transform Message">
-                    <ee:message>
-                        <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{message: "Not Implemented"}]]></ee:set-payload>
-                    </ee:message>
-                    <ee:variables>
-                        <ee:set-variable variableName="httpStatus">501</ee:set-variable>
-                    </ee:variables>
-                </ee:transform>
-            </on-error-propagate>
-        </error-handler>
-    </flow>
-    <flow name="process_api-console">
-        <http:listener config-ref="process_api-httpListenerConfig" path="/console/*">
-            <http:response statusCode="#[vars.httpStatus default 200]">
-                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
-            </http:response>
-            <http:error-response statusCode="#[vars.httpStatus default 500]">
-                <http:body>#[payload]</http:body>
-                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
-            </http:error-response>
-        </http:listener>
-        <apikit:console config-ref="process_api-config" />
-        <error-handler>
-            <on-error-propagate type="APIKIT:NOT_FOUND">
-                <ee:transform doc:name="Transform Message">
-                    <ee:message>
-                        <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{message: "Resource not found"}]]></ee:set-payload>
+{message: "Endpoint not found"}]]></ee:set-payload>
                     </ee:message>
                     <ee:variables>
                         <ee:set-variable variableName="httpStatus">404</ee:set-variable>
                     </ee:variables>
                 </ee:transform>
-            </on-error-propagate>
-        </error-handler>
+            </otherwise>
+        </choice>
     </flow>
-    <flow name="get:\itineraries:process_api-config">
-        <ee:transform doc:name="Transform Message">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-[] as Array {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
+    
+    <!-- GET /locations - Get all locations from Database -->
+    <flow name="process-get-locations">
+        <logger level="INFO" message="Process API: Getting all locations" />
+        <http:request method="GET" config-ref="Database_API_Config" path="/api/locations">
+            <http:response-validator>
+                <http:success-status-code-validator values="200..299" />
+            </http:response-validator>
+        </http:request>
+        <logger level="INFO" message="Process API: Received locations data" />
     </flow>
-    <flow name="get:\locations:process_api-config">
-        <ee:transform doc:name="Transform Message">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-[
-  {
-    id: 1,
-    name: "Miradouro da Vista do Rei",
-    category: "miradouro",
-    island: "São Miguel",
-    latitude: 37.833,
-    longitude: -25.797,
-    address: "Sete Cidades, São Miguel",
-    description: "Um dos locais mais emblemáticos dos Açores."
-  }
-] as Array {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-    </flow>
-    <flow name="get:\locations\(id):process_api-config">
-        <ee:transform doc:name="Transform Message">
-            <ee:variables>
-                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
-            </ee:variables>
-        </ee:transform>
-        <ee:transform doc:name="Transform Message">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
+    
+    <!-- GET /locations/{id} - Get location details with Geoapify data -->
+    <flow name="process-get-location-by-id">
+        <set-variable variableName="locationId" value="#[attributes.requestPath splitBy('/')[3]]" />
+        <logger level="INFO" message="Process API: Getting location #[vars.locationId]" />
+        
+        <!-- Get location from Database -->
+        <http:request method="GET" config-ref="Database_API_Config" path="#['/api/locations/' ++ vars.locationId]">
+            <http:response-validator>
+                <http:success-status-code-validator values="200..299" />
+            </http:response-validator>
+        </http:request>
+        <set-variable variableName="locationData" value="#[payload]" />
+        
+        <!-- Try to enrich with Geoapify data -->
+        <try>
+            <http:request method="GET" config-ref="Geoapify_API_Config" path="/api/places/nearby">
+                <http:query-params><![CDATA[#[output application/java
 ---
 {
-  id: 1,
-  name: "Lagoa das Sete Cidades",
-  category: "lagoa",
-  island: "São Miguel",
-  latitude: 37.851,
-  longitude: -25.79,
-  address: "Sete Cidades, São Miguel",
-  description: "Um dos locais mais emblemáticos dos Açores.",
-  difficulty: "n/a",
-  accessibility: "parcial"
-} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-    </flow>
-    <flow name="get:\routes:process_api-config">
-        <ee:transform doc:name="Transform Message">
+    "latitude": vars.locationData.latitude,
+    "longitude": vars.locationData.longitude,
+    "radius": "1000"
+}]]]></http:query-params>
+                <http:response-validator>
+                    <http:success-status-code-validator values="200..299" />
+                </http:response-validator>
+            </http:request>
+            <set-variable variableName="geoData" value="#[payload]" />
+            <error-handler>
+                <on-error-continue type="ANY">
+                    <logger level="WARN" message="Could not fetch Geoapify data" />
+                    <set-variable variableName="geoData" value="#[null]" />
+                </on-error-continue>
+            </error-handler>
+        </try>
+        
+        <!-- Combine data -->
+        <ee:transform>
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
-{
-  distance_km: 12.4,
-  duration_min: 25,
-  path: [
-    {
-      lat: 37.75,
-      lon: -25.67
-    }, 
-    {
-      lat: 37.78,
-      lon: -25.71
-    }
-  ]
-} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
+vars.locationData ++ {
+    nearbyPlaces: vars.geoData.features default []
+}]]></ee:set-payload>
             </ee:message>
         </ee:transform>
     </flow>
-    <flow name="get:\weather:process_api-config">
-        <ee:transform doc:name="Transform Message">
+    
+    <!-- GET /locations/{id}/weather - Get location with weather data -->
+    <flow name="process-get-location-weather">
+        <set-variable variableName="locationId" value="#[attributes.requestPath splitBy('/')[3]]" />
+        <logger level="INFO" message="Process API: Getting weather for location #[vars.locationId]" />
+        
+        <!-- Get location from Database -->
+        <http:request method="GET" config-ref="Database_API_Config" path="#['/api/locations/' ++ vars.locationId]">
+            <http:response-validator>
+                <http:success-status-code-validator values="200..299" />
+            </http:response-validator>
+        </http:request>
+        <set-variable variableName="locationData" value="#[payload]" />
+        
+        <!-- Get weather from OpenMeteo -->
+        <try>
+            <http:request method="GET" config-ref="OpenMeteo_API_Config" path="/api/weather/current">
+                <http:query-params><![CDATA[#[output application/java
+---
+{
+    "latitude": vars.locationData.latitude as String,
+    "longitude": vars.locationData.longitude as String
+}]]]></http:query-params>
+                <http:response-validator>
+                    <http:success-status-code-validator values="200..299" />
+                </http:response-validator>
+            </http:request>
+            <set-variable variableName="weatherData" value="#[payload]" />
+            <error-handler>
+                <on-error-continue type="ANY">
+                    <logger level="WARN" message="Could not fetch weather data" />
+                    <set-variable variableName="weatherData" value="#[{error: 'Weather data unavailable'}]" />
+                </on-error-continue>
+            </error-handler>
+        </try>
+        
+        <!-- Combine location + weather -->
+        <ee:transform>
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
-{
-  latitude: 37.7412,
-  longitude: -25.6756,
-  temperature: 18.2,
-  wind_speed: 5.4,
-  description: "Parcialmente nublado",
-  timestamp: "2025-10-21T10:00:00Z"
-} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
+vars.locationData ++ {
+    weather: vars.weatherData
+}]]></ee:set-payload>
             </ee:message>
         </ee:transform>
     </flow>
-    <flow name="post:\itineraries:application\json:process_api-config">
-        <ee:transform doc:name="Transform Message">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
+    
+    <!-- GET /itineraries - Get user itineraries -->
+    <flow name="process-get-itineraries">
+        <logger level="INFO" message="Process API: Getting itineraries" />
+        <http:request method="GET" config-ref="Database_API_Config" path="/api/itineraries">
+            <http:query-params><![CDATA[#[output application/java
 ---
-{
-  id: 101,
-  message: "Itinerary created"
-} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
+attributes.queryParams]]]></http:query-params>
+            <http:response-validator>
+                <http:success-status-code-validator values="200..299" />
+            </http:response-validator>
+        </http:request>
     </flow>
-    <flow name="post:\ratings:application\json:process_api-config">
-        <ee:transform doc:name="Transform Message">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
+    
+    <!-- POST /itineraries - Create itinerary -->
+    <flow name="process-post-itinerary">
+        <logger level="INFO" message="Process API: Creating itinerary" />
+        <http:request method="POST" config-ref="Database_API_Config" path="/api/itineraries">
+            <http:body><![CDATA[#[payload]]]></http:body>
+            <http:response-validator>
+                <http:success-status-code-validator values="200..299" />
+            </http:response-validator>
+        </http:request>
+    </flow>
+    
+    <!-- GET /itineraries/{id} - Get itinerary by ID -->
+    <flow name="process-get-itinerary-by-id">
+        <set-variable variableName="itineraryId" value="#[attributes.requestPath splitBy('/')[3]]" />
+        <logger level="INFO" message="Process API: Getting itinerary #[vars.itineraryId]" />
+        <http:request method="GET" config-ref="Database_API_Config" path="#['/api/itineraries/' ++ vars.itineraryId]">
+            <http:response-validator>
+                <http:success-status-code-validator values="200..299" />
+            </http:response-validator>
+        </http:request>
+    </flow>
+    
+    <!-- GET /ratings - Get ratings -->
+    <flow name="process-get-ratings">
+        <logger level="INFO" message="Process API: Getting ratings" />
+        <http:request method="GET" config-ref="Database_API_Config" path="/api/ratings">
+            <http:query-params><![CDATA[#[output application/java
 ---
-{
-  message: "Rating received"
-} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
+attributes.queryParams]]]></http:query-params>
+            <http:response-validator>
+                <http:success-status-code-validator values="200..299" />
+            </http:response-validator>
+        </http:request>
     </flow>
+    
+    <!-- POST /ratings - Submit rating -->
+    <flow name="process-post-rating">
+        <logger level="INFO" message="Process API: Submitting rating" />
+        <http:request method="POST" config-ref="Database_API_Config" path="/api/ratings">
+            <http:body><![CDATA[#[payload]]]></http:body>
+            <http:response-validator>
+                <http:success-status-code-validator values="200..299" />
+            </http:response-validator>
+        </http:request>
+    </flow>
+    
+    <!-- GET /favorites - Get user favorites -->
+    <flow name="process-get-favorites">
+        <logger level="INFO" message="Process API: Getting favorites" />
+        <http:request method="GET" config-ref="Database_API_Config" path="/api/favorites">
+            <http:query-params><![CDATA[#[output application/java
+---
+attributes.queryParams]]]></http:query-params>
+            <http:response-validator>
+                <http:success-status-code-validator values="200..299" />
+            </http:response-validator>
+        </http:request>
+    </flow>
+    
+    <!-- POST /favorites - Add favorite -->
+    <flow name="process-post-favorite">
+        <logger level="INFO" message="Process API: Adding favorite" />
+        <http:request method="POST" config-ref="Database_API_Config" path="/api/favorites">
+            <http:body><![CDATA[#[payload]]]></http:body>
+            <http:response-validator>
+                <http:success-status-code-validator values="200..299" />
+            </http:response-validator>
+        </http:request>
+    </flow>
+    
+    <!-- DELETE /favorites/{id} - Remove favorite -->
+    <flow name="process-delete-favorite">
+        <set-variable variableName="favoriteId" value="#[attributes.requestPath splitBy('/')[3]]" />
+        <logger level="INFO" message="Process API: Deleting favorite #[vars.favoriteId]" />
+        <http:request method="DELETE" config-ref="Database_API_Config" path="#['/api/favorites/' ++ vars.favoriteId]">
+            <http:response-validator>
+                <http:success-status-code-validator values="200..299" />
+            </http:response-validator>
+        </http:request>
+    </flow>
+    
 </mule>

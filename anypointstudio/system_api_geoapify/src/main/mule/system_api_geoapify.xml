@@ -1,12 +1,44 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<mule xmlns:api-gateway="http://www.mulesoft.org/schema/mule/api-gateway" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd 
+<mule xmlns:api-gateway="http://www.mulesoft.org/schema/mule/api-gateway" 
+      xmlns="http://www.mulesoft.org/schema/mule/core" 
+      xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" 
+      xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" 
+      xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" 
+      xmlns:http="http://www.mulesoft.org/schema/mule/http" 
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+      xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd 
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd 
+http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd 
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd 
 http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/mule/api-gateway/current/mule-api-gateway.xsd">
+    
+    <!-- HTTP Listener Config -->
     <http:listener-config name="system_api_geoapify-httpListenerConfig">
-        <http:listener-connection host="0.0.0.0" port="8081" />
+        <http:listener-connection host="0.0.0.0" port="8082" />
     </http:listener-config>
-    <apikit:config name="system_api_geoapify-config" api="resource::1782ea4a-5a87-4bb9-8106-5f1c978c57b1:system_api_geoapify:1.0.0:raml:zip:system_api_geoapify.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
-    <api-gateway:autodiscovery apiId="20617159" ignoreBasePath="true" doc:name="API Autodiscovery" doc:id="628bf605-f279-4905-adaa-c95b882877ad" flowRef="system_api_geoapify-main" />
-	<flow name="system_api_geoapify-main">
+    
+    <!-- HTTP Request Config for Geoapify API -->
+    <http:request-config name="Geoapify_HTTP_Request_Config" doc:name="HTTP Request configuration">
+        <http:request-connection host="api.geoapify.com" protocol="HTTPS" />
+    </http:request-config>
+    
+    <!-- APIKit Config -->
+    <apikit:config name="system_api_geoapify-config" 
+                   api="resource::1782ea4a-5a87-4bb9-8106-5f1c978c57b1:system_api_geoapify:1.0.0:raml:zip:system_api_geoapify.raml" 
+                   outboundHeadersMapName="outboundHeaders" 
+                   httpStatusVarName="httpStatus" />
+    
+    <!-- API Autodiscovery - COMMENTED OUT FOR LOCAL TESTING -->
+    <!--
+    <api-gateway:autodiscovery apiId="20617159" 
+                               ignoreBasePath="true" 
+                               doc:name="API Autodiscovery" 
+                               doc:id="b561f39c-f065-4f9a-b868-bdd91b7641a7" 
+                               flowRef="system_api_geoapify-main" />
+    -->
+    
+    <!-- Main Flow -->
+    <flow name="system_api_geoapify-main">
         <http:listener config-ref="system_api_geoapify-httpListenerConfig" path="/api/*">
             <http:response statusCode="#[vars.httpStatus default 200]">
                 <http:headers>#[vars.outboundHeaders default {}]</http:headers>
@@ -98,6 +130,8 @@ output application/json
             </on-error-propagate>
         </error-handler>
     </flow>
+    
+    <!-- Console Flow -->
     <flow name="system_api_geoapify-console">
         <http:listener config-ref="system_api_geoapify-httpListenerConfig" path="/console/*">
             <http:response statusCode="#[vars.httpStatus default 200]">
@@ -125,407 +159,145 @@ output application/json
             </on-error-propagate>
         </error-handler>
     </flow>
-    <flow name="get:\geocode\reverse:system_api_geoapify-config">
-        <ee:transform doc:name="Transform Message">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-  "type": "FeatureCollection",
-  features: [
-    {
-      "type": "Feature",
-      properties: {
-        name: "Lagoa das Sete Cidades",
-        country: "Portugal",
-        country_code: "pt",
-        state: "Açores",
-        county: "Ponta Delgada",
-        city: "Ponta Delgada",
-        postcode: "9555",
-        suburb: "Sete Cidades",
-        lon: -25.7897,
-        lat: 37.8615,
-        formatted: "Lagoa das Sete Cidades, Sete Cidades, 9555 Ponta Delgada, Açores, Portugal",
-        address_line1: "Lagoa das Sete Cidades",
-        address_line2: "Sete Cidades, 9555 Ponta Delgada, Açores, Portugal",
-        category: "natural",
-        result_type: "natural",
-        rank: {
-          importance: 0.8945623,
-          popularity: 0.9234561
-        },
-        place_id: "51a4d7814540e35140596bd2b6ab76244940f00101f901e6e8110000000000c00208"
-      },
-      geometry: {
-        "type": "Point",
-        coordinates: [
-          -25.7897, 
-          37.8615
-        ]
-      }
-    }, 
-    {
-      "type": "Feature",
-      properties: {
-        name: "Miradouro das Sete Cidades",
-        country: "Portugal",
-        country_code: "pt",
-        state: "Açores",
-        county: "Ponta Delgada",
-        city: "Ponta Delgada",
-        postcode: "9555",
-        suburb: "Sete Cidades",
-        lon: -25.7823,
-        lat: 37.8642,
-        formatted: "Miradouro das Sete Cidades, Sete Cidades, 9555 Ponta Delgada, Açores, Portugal",
-        address_line1: "Miradouro das Sete Cidades",
-        address_line2: "Sete Cidades, 9555 Ponta Delgada, Açores, Portugal",
-        category: "tourism",
-        result_type: "amenity",
-        rank: {
-          importance: 0.7856234,
-          popularity: 0.8712345
-        },
-        place_id: "51b8c9d6e4f8a35140596bd2b6ab76244940f00101f901e6e8130000000000c00410"
-      },
-      geometry: {
-        "type": "Point",
-        coordinates: [
-          -25.7823, 
-          37.8642
-        ]
-      }
-    }
-  ],
-  query: {
-    text: "Lagoa das Sete Cidades",
-    parsed: {
-      city: "Ponta Delgada",
-      state: "Açores",
-      country: "Portugal"
-    }
-  }
-} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-    </flow>
-    <flow name="get:\geocode\search:system_api_geoapify-config">
-        <ee:transform doc:name="Transform Message">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-  "type": "FeatureCollection",
-  features: [
-    {
-      "type": "Feature",
-      properties: {
-        name: "Lagoa das Sete Cidades",
-        country: "Portugal",
-        country_code: "pt",
-        state: "Açores",
-        county: "Ponta Delgada",
-        city: "Ponta Delgada",
-        postcode: "9555",
-        suburb: "Sete Cidades",
-        lon: -25.7897,
-        lat: 37.8615,
-        formatted: "Lagoa das Sete Cidades, Sete Cidades, 9555 Ponta Delgada, Açores, Portugal",
-        address_line1: "Lagoa das Sete Cidades",
-        address_line2: "Sete Cidades, 9555 Ponta Delgada, Açores, Portugal",
-        category: "natural",
-        result_type: "natural",
-        rank: {
-          importance: 0.8945623,
-          popularity: 0.9234561
-        },
-        place_id: "51a4d7814540e35140596bd2b6ab76244940f00101f901e6e8110000000000c00208"
-      },
-      geometry: {
-        "type": "Point",
-        coordinates: [
-          -25.7897, 
-          37.8615
-        ]
-      }
-    }, 
-    {
-      "type": "Feature",
-      properties: {
-        name: "Miradouro das Sete Cidades",
-        country: "Portugal",
-        country_code: "pt",
-        state: "Açores",
-        county: "Ponta Delgada",
-        city: "Ponta Delgada",
-        postcode: "9555",
-        suburb: "Sete Cidades",
-        lon: -25.7823,
-        lat: 37.8642,
-        formatted: "Miradouro das Sete Cidades, Sete Cidades, 9555 Ponta Delgada, Açores, Portugal",
-        address_line1: "Miradouro das Sete Cidades",
-        address_line2: "Sete Cidades, 9555 Ponta Delgada, Açores, Portugal",
-        category: "tourism",
-        result_type: "amenity",
-        rank: {
-          importance: 0.7856234,
-          popularity: 0.8712345
-        },
-        place_id: "51b8c9d6e4f8a35140596bd2b6ab76244940f00101f901e6e8130000000000c00410"
-      },
-      geometry: {
-        "type": "Point",
-        coordinates: [
-          -25.7823, 
-          37.8642
-        ]
-      }
-    }
-  ],
-  query: {
-    text: "Lagoa das Sete Cidades",
-    parsed: {
-      city: "Ponta Delgada",
-      state: "Açores",
-      country: "Portugal"
-    }
-  }
-} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-    </flow>
+    
+    <!-- GET /places endpoint - REAL API CALL -->
     <flow name="get:\places:system_api_geoapify-config">
-        <ee:transform doc:name="Transform Message">
+        <logger level="INFO" doc:name="Log Request" 
+                message="#['Fetching places with categories: ' ++ attributes.queryParams.categories ++ ', filter: ' ++ attributes.queryParams.filter]"/>
+        
+        <!-- Call Geoapify API -->
+        <http:request method="GET" 
+                     config-ref="Geoapify_HTTP_Request_Config" 
+                     path="/v2/places" 
+                     doc:name="Call Geoapify API">
+            <http:query-params><![CDATA[#[output application/java
+---
+{
+    "categories": attributes.queryParams.categories,
+    "filter": attributes.queryParams.filter,
+    "limit": attributes.queryParams.limit default "20",
+    "lang": attributes.queryParams.lang default "pt",
+    "apiKey": "YOUR_GEOAPIFY_API_KEY"
+}]]]></http:query-params>
+        </http:request>
+        
+        <logger level="INFO" doc:name="Log Success" 
+                message="#['Successfully retrieved ' ++ (sizeOf(payload.features) default 0) ++ ' places']"/>
+        
+        <!-- Return the response as-is -->
+        <ee:transform doc:name="Transform Response">
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
-{
-  "type": "FeatureCollection",
-  features: [
-    {
-      "type": "Feature",
-      properties: {
-        name: "Lagoa das Sete Cidades",
-        place_id: "51a4d7814540e35140596bd2b6ab76244940f00101f901e6e8110000000000c00208",
-        categories: [
-          "tourism.attraction", 
-          "natural.lake"
-        ],
-        address_line1: "Sete Cidades",
-        address_line2: "9555 Sete Cidades, Portugal",
-        city: "Ponta Delgada",
-        county: "Ponta Delgada",
-        state: "Açores",
-        country: "Portugal",
-        country_code: "pt",
-        postcode: "9555",
-        lon: -25.7897,
-        lat: 37.8615,
-        formatted: "Lagoa das Sete Cidades, Sete Cidades, 9555 Ponta Delgada, Portugal",
-        distance: 1250
-      },
-      geometry: {
-        "type": "Point",
-        coordinates: [
-          -25.7897, 
-          37.8615
-        ]
-      }
-    }, 
-    {
-      "type": "Feature",
-      properties: {
-        name: "Lagoa do Fogo",
-        place_id: "51f4a2b5c3d7e25140596bd2b6ab76244940f00101f901e6e8120000000000c00309",
-        categories: [
-          "tourism.attraction", 
-          "natural.lake"
-        ],
-        address_line1: "Agua de Pau",
-        address_line2: "9560 Lagoa, Portugal",
-        city: "Lagoa",
-        county: "Lagoa",
-        state: "Açores",
-        country: "Portugal",
-        country_code: "pt",
-        postcode: "9560",
-        lon: -25.4732,
-        lat: 37.7516,
-        formatted: "Lagoa do Fogo, Agua de Pau, 9560 Lagoa, Portugal",
-        distance: 8450
-      },
-      geometry: {
-        "type": "Point",
-        coordinates: [
-          -25.4732, 
-          37.7516
-        ]
-      }
-    }, 
-    {
-      "type": "Feature",
-      properties: {
-        name: "Miradouro da Boca do Inferno",
-        place_id: "51b8c9d6e4f8a35140596bd2b6ab76244940f00101f901e6e8130000000000c00410",
-        categories: [
-          "tourism.viewpoint"
-        ],
-        address_line1: "Sete Cidades",
-        address_line2: "9555 Ponta Delgada, Portugal",
-        city: "Ponta Delgada",
-        county: "Ponta Delgada",
-        state: "Açores",
-        country: "Portugal",
-        country_code: "pt",
-        postcode: "9555",
-        lon: -25.7823,
-        lat: 37.8642,
-        formatted: "Miradouro da Boca do Inferno, Sete Cidades, 9555 Ponta Delgada, Portugal",
-        distance: 2100
-      },
-      geometry: {
-        "type": "Point",
-        coordinates: [
-          -25.7823, 
-          37.8642
-        ]
-      }
-    }, 
-    {
-      "type": "Feature",
-      properties: {
-        name: "Praia de Santa Bárbara",
-        place_id: "51c7d0e5f6g9b45140596bd2b6ab76244940f00101f901e6e8140000000000c00511",
-        categories: [
-          "natural.beach", 
-          "tourism.attraction"
-        ],
-        address_line1: "Ribeira Grande",
-        address_line2: "9600 Ribeira Grande, Portugal",
-        city: "Ribeira Grande",
-        county: "Ribeira Grande",
-        state: "Açores",
-        country: "Portugal",
-        country_code: "pt",
-        postcode: "9600",
-        lon: -25.6245,
-        lat: 37.8201,
-        formatted: "Praia de Santa Bárbara, Ribeira Grande, 9600 Ribeira Grande, Portugal",
-        distance: 4780
-      },
-      geometry: {
-        "type": "Point",
-        coordinates: [
-          -25.6245, 
-          37.8201
-        ]
-      }
-    }, 
-    {
-      "type": "Feature",
-      properties: {
-        name: "Furnas",
-        place_id: "51d6e1f7g0h8c55140596bd2b6ab76244940f00101f901e6e8150000000000c00612",
-        categories: [
-          "tourism.attraction", 
-          "natural.hot_spring"
-        ],
-        address_line1: "Furnas",
-        address_line2: "9675 Povoacao, Portugal",
-        city: "Povoação",
-        county: "Povoação",
-        state: "Açores",
-        country: "Portugal",
-        country_code: "pt",
-        postcode: "9675",
-        lon: -25.3153,
-        lat: 37.7714,
-        formatted: "Furnas, 9675 Povoacao, Portugal",
-        distance: 12350
-      },
-      geometry: {
-        "type": "Point",
-        coordinates: [
-          -25.3153, 
-          37.7714
-        ]
-      }
-    }
-  ],
-  properties: {
-    query: {
-      categories: [
-        "tourism.attraction"
-      ],
-      filter: "circle:-25.6756,37.7412,15000",
-      limit: 20
-    },
-    count: 5
-  }
-} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
+payload]]></ee:set-payload>
             </ee:message>
         </ee:transform>
     </flow>
+    
+    <!-- GET /places/{placeId} endpoint - REAL API CALL -->
     <flow name="get:\places\(placeId):system_api_geoapify-config">
-        <ee:transform doc:name="Transform Message">
+        <ee:transform doc:name="Extract placeId">
             <ee:variables>
                 <ee:set-variable variableName="placeId">attributes.uriParams.'placeId'</ee:set-variable>
             </ee:variables>
         </ee:transform>
-        <ee:transform doc:name="Transform Message">
+        
+        <logger level="INFO" doc:name="Log Request" 
+                message="#['Fetching place details for: ' ++ vars.placeId]"/>
+        
+        <!-- Call Geoapify API -->
+        <http:request method="GET" 
+                     config-ref="Geoapify_HTTP_Request_Config" 
+                     path="/v2/place-details" 
+                     doc:name="Call Geoapify API">
+            <http:query-params><![CDATA[#[output application/java
+---
+{
+    "id": vars.placeId,
+    "lang": attributes.queryParams.lang default "pt",
+    "apiKey": "YOUR_GEOAPIFY_API_KEY"
+}]]]></http:query-params>
+        </http:request>
+        
+        <logger level="INFO" doc:name="Log Success" 
+                message="#['Successfully retrieved place details']"/>
+        
+        <!-- Return the response as-is -->
+        <ee:transform doc:name="Transform Response">
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    
+    <!-- GET /geocode/search endpoint - REAL API CALL -->
+    <flow name="get:\geocode\search:system_api_geoapify-config">
+        <logger level="INFO" doc:name="Log Request" 
+                message="#['Geocoding search for: ' ++ attributes.queryParams.text]"/>
+        
+        <!-- Call Geoapify API -->
+        <http:request method="GET" 
+                     config-ref="Geoapify_HTTP_Request_Config" 
+                     path="/v1/geocode/search" 
+                     doc:name="Call Geoapify API">
+            <http:query-params><![CDATA[#[output application/java
+---
 {
-  "type": "Feature",
-  properties: {
-    name: "Lagoa das Sete Cidades",
-    place_id: "51a4d7814540e35140596bd2b6ab76244940f00101f901e6e8110000000000c00208",
-    categories: [
-      "tourism.attraction", 
-      "natural.lake", 
-      "tourism.sights"
-    ],
-    address_line1: "Sete Cidades",
-    address_line2: "9555 Sete Cidades, Portugal",
-    city: "Ponta Delgada",
-    county: "Ponta Delgada",
-    state: "Açores",
-    country: "Portugal",
-    country_code: "pt",
-    postcode: "9555",
-    lon: -25.7897,
-    lat: 37.8615,
-    formatted: "Lagoa das Sete Cidades, Sete Cidades, 9555 Ponta Delgada, Açores, Portugal",
-    datasource: {
-      sourcename: "openstreetmap",
-      attribution: "© OpenStreetMap contributors"
-    },
-    opening_hours: "24/7",
-    contact: {
-      website: "https://www.visitazores.com/pt/explore/sete-cidades"
-    },
-    website: "https://www.visitazores.com/pt/explore/sete-cidades",
-    wheelchair: "limited",
-    wiki_and_media: {
-      wikipedia: "https://pt.wikipedia.org/wiki/Lagoa_das_Sete_Cidades",
-      wikidata: "Q1065890",
-      image: "https://commons.wikimedia.org/wiki/File:Lagoa_das_Sete_Cidades.jpg"
-    }
-  },
-  geometry: {
-    "type": "Point",
-    coordinates: [
-      -25.7897, 
-      37.8615
-    ]
-  }
-} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
+    "text": attributes.queryParams.text,
+    "limit": attributes.queryParams.limit default "5",
+    "lang": attributes.queryParams.lang default "pt",
+    "apiKey": "YOUR_GEOAPIFY_API_KEY"
+} ++ (if (!isEmpty(attributes.queryParams.filter)) {"filter": attributes.queryParams.filter} else {})]]]></http:query-params>
+        </http:request>
+        
+        <logger level="INFO" doc:name="Log Success" 
+                message="#['Successfully geocoded location']"/>
+        
+        <!-- Return the response as-is -->
+        <ee:transform doc:name="Transform Response">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    
+    <!-- GET /geocode/reverse endpoint - REAL API CALL -->
+    <flow name="get:\geocode\reverse:system_api_geoapify-config">
+        <logger level="INFO" doc:name="Log Request" 
+                message="#['Reverse geocoding for lat: ' ++ attributes.queryParams.lat ++ ', lon: ' ++ attributes.queryParams.lon]"/>
+        
+        <!-- Call Geoapify API -->
+        <http:request method="GET" 
+                     config-ref="Geoapify_HTTP_Request_Config" 
+                     path="/v1/geocode/reverse" 
+                     doc:name="Call Geoapify API">
+            <http:query-params><![CDATA[#[output application/java
+---
+{
+    "lat": attributes.queryParams.lat,
+    "lon": attributes.queryParams.lon,
+    "lang": attributes.queryParams.lang default "pt",
+    "apiKey": "YOUR_GEOAPIFY_API_KEY"
+}]]]></http:query-params>
+        </http:request>
+        
+        <logger level="INFO" doc:name="Log Success" 
+                message="#['Successfully reverse geocoded coordinates']"/>
+        
+        <!-- Return the response as-is -->
+        <ee:transform doc:name="Transform Response">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
             </ee:message>
         </ee:transform>
     </flow>

@@ -1,12 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<mule xmlns:api-gateway="http://www.mulesoft.org/schema/mule/api-gateway" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd 
-http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/mule/api-gateway/current/mule-api-gateway.xsd">
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http"
+      xmlns="http://www.mulesoft.org/schema/mule/core" 
+      xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" 
+      xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" 
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+      xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd 
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd 
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+    
+    <!-- HTTP Listener Configuration - PORT 8085 (Experience API) -->
     <http:listener-config name="experience-api-httpListenerConfig">
-        <http:listener-connection host="0.0.0.0" port="8081" />
+        <http:listener-connection host="0.0.0.0" port="8085" />
     </http:listener-config>
-    <apikit:config name="experience-api-config" api="resource::1782ea4a-5a87-4bb9-8106-5f1c978c57b1:experience_api:1.0.0:raml:zip:experience-api.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
-    <api-gateway:autodiscovery apiId="20617152" ignoreBasePath="true" doc:name="API Autodiscovery" doc:id="bba0cb39-1a80-48ab-81c5-518c2673054a" flowRef="experience-api-main" />
-	<flow name="experience-api-main">
+    
+    <!-- HTTP Request Configuration for Process API -->
+    <http:request-config name="Process_API_Config">
+        <http:request-connection host="localhost" port="8084" />
+    </http:request-config>
+    
+    <!-- HTTP Request Configuration for Database API (for auth) -->
+    <http:request-config name="Database_API_Config">
+        <http:request-connection host="localhost" port="8083" />
+    </http:request-config>
+    
+    <!-- Main Flow -->
+    <flow name="experience-api-main">
         <http:listener config-ref="experience-api-httpListenerConfig" path="/api/*">
             <http:response statusCode="#[vars.httpStatus default 200]">
                 <http:headers>#[vars.outboundHeaders default {}]</http:headers>
@@ -16,618 +34,431 @@ http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/m
                 <http:headers>#[vars.outboundHeaders default {}]</http:headers>
             </http:error-response>
         </http:listener>
-        <apikit:router config-ref="experience-api-config" />
-        <error-handler>
-            <on-error-propagate type="APIKIT:BAD_REQUEST">
-                <ee:transform doc:name="Transform Message">
+        
+        <choice doc:name="Route Request">
+            <!-- ========== AUTH ENDPOINTS (no auth required) ========== -->
+            <!-- POST /users (register) -->
+            <when expression="#[attributes.method == 'POST' and attributes.requestPath == '/api/users']">
+                <flow-ref name="experience-register-user" />
+            </when>
+            <!-- POST /users/login -->
+            <when expression="#[attributes.method == 'POST' and attributes.requestPath == '/api/users/login']">
+                <flow-ref name="experience-login-user" />
+            </when>
+            
+            <!-- ========== ISLANDS ENDPOINTS ========== -->
+            <!-- GET /islands -->
+            <when expression="#[attributes.method == 'GET' and attributes.requestPath == '/api/islands']">
+                <flow-ref name="experience-get-islands" />
+            </when>
+            
+            <!-- ========== LOCATIONS ENDPOINTS ========== -->
+            <!-- GET /locations -->
+            <when expression="#[attributes.method == 'GET' and attributes.requestPath == '/api/locations']">
+                <flow-ref name="experience-get-locations" />
+            </when>
+            <!-- GET /locations/{id} -->
+            <when expression="#[attributes.method == 'GET' and attributes.requestPath matches /\/api\/locations\/\d+$/]">
+                <flow-ref name="experience-get-location-by-id" />
+            </when>
+            <!-- GET /locations/{id}/weather -->
+            <when expression="#[attributes.method == 'GET' and attributes.requestPath matches /\/api\/locations\/\d+\/weather/]">
+                <flow-ref name="experience-get-location-weather" />
+            </when>
+            
+            <!-- ========== ITINERARIES ENDPOINTS ========== -->
+            <!-- GET /itineraries -->
+            <when expression="#[attributes.method == 'GET' and attributes.requestPath == '/api/itineraries']">
+                <flow-ref name="experience-get-itineraries" />
+            </when>
+            <!-- POST /itineraries -->
+            <when expression="#[attributes.method == 'POST' and attributes.requestPath == '/api/itineraries']">
+                <flow-ref name="experience-post-itinerary" />
+            </when>
+            <!-- GET /itineraries/{id} -->
+            <when expression="#[attributes.method == 'GET' and attributes.requestPath matches /\/api\/itineraries\/\d+/]">
+                <flow-ref name="experience-get-itinerary-by-id" />
+            </when>
+            
+            <!-- ========== RATINGS ENDPOINTS ========== -->
+            <!-- GET /ratings -->
+            <when expression="#[attributes.method == 'GET' and attributes.requestPath == '/api/ratings']">
+                <flow-ref name="experience-get-ratings" />
+            </when>
+            <!-- POST /ratings -->
+            <when expression="#[attributes.method == 'POST' and attributes.requestPath == '/api/ratings']">
+                <flow-ref name="experience-post-rating" />
+            </when>
+            
+            <!-- ========== FAVORITES ENDPOINTS ========== -->
+            <!-- GET /favorites -->
+            <when expression="#[attributes.method == 'GET' and attributes.requestPath == '/api/favorites']">
+                <flow-ref name="experience-get-favorites" />
+            </when>
+            <!-- POST /favorites -->
+            <when expression="#[attributes.method == 'POST' and attributes.requestPath == '/api/favorites']">
+                <flow-ref name="experience-post-favorite" />
+            </when>
+            <!-- DELETE /favorites/{id} -->
+            <when expression="#[attributes.method == 'DELETE' and attributes.requestPath matches /\/api\/favorites\/\d+/]">
+                <flow-ref name="experience-delete-favorite" />
+            </when>
+            
+            <!-- ========== ADMIN ENDPOINTS ========== -->
+            <!-- GET /admin/locations -->
+            <when expression="#[attributes.method == 'GET' and attributes.requestPath == '/api/admin/locations']">
+                <flow-ref name="experience-get-locations" />
+            </when>
+            <!-- GET /admin/users -->
+            <when expression="#[attributes.method == 'GET' and attributes.requestPath == '/api/admin/users']">
+                <flow-ref name="experience-get-users" />
+            </when>
+            <!-- GET /admin/integrations -->
+            <when expression="#[attributes.method == 'GET' and attributes.requestPath == '/api/admin/integrations']">
+                <flow-ref name="experience-get-integrations" />
+            </when>
+            
+            <!-- Default: Not Found -->
+            <otherwise>
+                <ee:transform>
                     <ee:message>
                         <ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
-{message: "Bad request"}]]></ee:set-payload>
-                    </ee:message>
-                    <ee:variables>
-                        <ee:set-variable variableName="httpStatus">400</ee:set-variable>
-                    </ee:variables>
-                </ee:transform>
-            </on-error-propagate>
-            <on-error-propagate type="APIKIT:NOT_FOUND">
-                <ee:transform doc:name="Transform Message">
-                    <ee:message>
-                        <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{message: "Resource not found"}]]></ee:set-payload>
-                    </ee:message>
-                    <ee:variables>
-                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
-                    </ee:variables>
-                </ee:transform>
-            </on-error-propagate>
-            <on-error-propagate type="APIKIT:METHOD_NOT_ALLOWED">
-                <ee:transform doc:name="Transform Message">
-                    <ee:message>
-                        <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{message: "Method not allowed"}]]></ee:set-payload>
-                    </ee:message>
-                    <ee:variables>
-                        <ee:set-variable variableName="httpStatus">405</ee:set-variable>
-                    </ee:variables>
-                </ee:transform>
-            </on-error-propagate>
-            <on-error-propagate type="APIKIT:NOT_ACCEPTABLE">
-                <ee:transform doc:name="Transform Message">
-                    <ee:message>
-                        <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{message: "Not acceptable"}]]></ee:set-payload>
-                    </ee:message>
-                    <ee:variables>
-                        <ee:set-variable variableName="httpStatus">406</ee:set-variable>
-                    </ee:variables>
-                </ee:transform>
-            </on-error-propagate>
-            <on-error-propagate type="APIKIT:UNSUPPORTED_MEDIA_TYPE">
-                <ee:transform doc:name="Transform Message">
-                    <ee:message>
-                        <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{message: "Unsupported media type"}]]></ee:set-payload>
-                    </ee:message>
-                    <ee:variables>
-                        <ee:set-variable variableName="httpStatus">415</ee:set-variable>
-                    </ee:variables>
-                </ee:transform>
-            </on-error-propagate>
-            <on-error-propagate type="APIKIT:NOT_IMPLEMENTED">
-                <ee:transform doc:name="Transform Message">
-                    <ee:message>
-                        <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{message: "Not Implemented"}]]></ee:set-payload>
-                    </ee:message>
-                    <ee:variables>
-                        <ee:set-variable variableName="httpStatus">501</ee:set-variable>
-                    </ee:variables>
-                </ee:transform>
-            </on-error-propagate>
-        </error-handler>
-    </flow>
-    <flow name="experience-api-console">
-        <http:listener config-ref="experience-api-httpListenerConfig" path="/console/*">
-            <http:response statusCode="#[vars.httpStatus default 200]">
-                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
-            </http:response>
-            <http:error-response statusCode="#[vars.httpStatus default 500]">
-                <http:body>#[payload]</http:body>
-                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
-            </http:error-response>
-        </http:listener>
-        <apikit:console config-ref="experience-api-config" />
-        <error-handler>
-            <on-error-propagate type="APIKIT:NOT_FOUND">
-                <ee:transform doc:name="Transform Message">
-                    <ee:message>
-                        <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{message: "Resource not found"}]]></ee:set-payload>
+{message: "Endpoint not found"}]]></ee:set-payload>
                     </ee:message>
                     <ee:variables>
                         <ee:set-variable variableName="httpStatus">404</ee:set-variable>
                     </ee:variables>
                 </ee:transform>
-            </on-error-propagate>
-        </error-handler>
+            </otherwise>
+        </choice>
     </flow>
-    <flow name="delete:\profile\itineraries\(itineraryId):experience-api-config">
-        <ee:transform doc:name="Transform Message">
-            <ee:variables>
-                <ee:set-variable variableName="itineraryId">attributes.uriParams.'itineraryId'</ee:set-variable>
-            </ee:variables>
-        </ee:transform>
-        <ee:transform doc:name="Transform Message">
+    
+    <!-- ========================================== -->
+    <!-- AUTH FLOWS -->
+    <!-- ========================================== -->
+    
+    <!-- POST /users - Register new user -->
+    <flow name="experience-register-user">
+        <logger level="INFO" message="Experience API: Registering new user" />
+        <http:request method="POST" config-ref="Database_API_Config" path="/api/users">
+            <http:body><![CDATA[#[payload]]]></http:body>
+            <http:response-validator>
+                <http:success-status-code-validator values="200..299" />
+            </http:response-validator>
+        </http:request>
+        <ee:transform>
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
 {
-  error: "Bad Request",
-  message: "Missing or invalid parameter"
-} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
+    id: payload.id,
+    email: payload.email,
+    name: payload.name,
+    token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.demo.token"
+}]]></ee:set-payload>
             </ee:message>
         </ee:transform>
     </flow>
-    <flow name="delete:\profile\favorites\(locationId):experience-api-config">
-        <ee:transform doc:name="Transform Message">
-            <ee:variables>
-                <ee:set-variable variableName="locationId">attributes.uriParams.'locationId'</ee:set-variable>
-            </ee:variables>
-        </ee:transform>
-        <ee:transform doc:name="Transform Message">
+    
+    <!-- POST /users/login - User login -->
+    <flow name="experience-login-user">
+        <logger level="INFO" message="Experience API: User login" />
+        <http:request method="POST" config-ref="Database_API_Config" path="/api/users/login">
+            <http:body><![CDATA[#[payload]]]></http:body>
+            <http:response-validator>
+                <http:success-status-code-validator values="200..299" />
+            </http:response-validator>
+        </http:request>
+        <ee:transform>
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
 {
-  error: "Bad Request",
-  message: "Missing or invalid parameter"
-} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
+    id: payload.id,
+    email: payload.email,
+    name: payload.name,
+    token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.demo.token"
+}]]></ee:set-payload>
             </ee:message>
         </ee:transform>
     </flow>
-    <flow name="patch:\profile:experience-api-config">
-        <ee:transform doc:name="Transform Message">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-  id: 42,
-  name: "João Silva",
-  email: "joao@example.com",
-  preferences: {},
-  statistics: {}
-} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-    </flow>
-    <flow name="patch:\profile\itineraries\(itineraryId):experience-api-config">
-        <ee:transform doc:name="Transform Message">
-            <ee:variables>
-                <ee:set-variable variableName="itineraryId">attributes.uriParams.'itineraryId'</ee:set-variable>
-            </ee:variables>
-        </ee:transform>
-        <ee:transform doc:name="Transform Message">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-  id: 1,
-  name: "3 Dias São Miguel",
-  startDate: "2025-12-01",
-  endDate: "2025-12-03",
-  numberOfLocations: 5,
-  totalDistance: 120.5
-} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-    </flow>
-    <flow name="get:\profile\itineraries\(itineraryId)\export\pdf:experience-api-config">
-        <ee:transform doc:name="Transform Message">
-            <ee:variables>
-                <ee:set-variable variableName="itineraryId">attributes.uriParams.'itineraryId'</ee:set-variable>
-            </ee:variables>
-        </ee:transform>
-        <ee:transform doc:name="Transform Message">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-  error: "Unauthorized",
-  message: "Invalid or expired token"
-} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-    </flow>
-    <flow name="get:\profile\favorites:experience-api-config">
-        <ee:transform doc:name="Transform Message">
+    
+    <!-- ========================================== -->
+    <!-- ISLANDS FLOWS -->
+    <!-- ========================================== -->
+    
+    <!-- GET /islands - Return hardcoded islands -->
+    <flow name="experience-get-islands">
+        <logger level="INFO" message="Experience API: Getting islands" />
+        <ee:transform>
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
 [
-  {
-    id: 5,
-    name: "Ponta Delgada",
-    category: "Cidade",
-    island: "São Miguel",
-    imageUrl: "https://example.com/delgada.jpg",
-    description: "Capital dos Açores com arquitetura histórica.",
-    rating: 4.6,
-    ratingCount: 150
-  }
-] as Array {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-    </flow>
-    <flow name="get:\home:experience-api-config">
-        <ee:transform doc:name="Transform Message">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-  featuredIslands: [
     {
-      name: "São Miguel",
-      poiCount: 45,
-      weather: {
-        temperature: 19
-      }
-    }, 
+        id: 1,
+        name: "São Miguel",
+        description: "The largest island in the Azores, known for its volcanic landscapes and hot springs",
+        imageUrl: "/assets/images/islands/sao-miguel.jpg",
+        locationCount: 15
+    },
     {
-      name: "Terceira",
-      poiCount: 32,
-      weather: {
-        temperature: 21
-      }
+        id: 2,
+        name: "Terceira",
+        description: "UNESCO World Heritage site with rich history and vibrant festivals",
+        imageUrl: "/assets/images/islands/terceira.jpg",
+        locationCount: 10
+    },
+    {
+        id: 3,
+        name: "Faial",
+        description: "Known as the Blue Island, famous for its hydrangeas and marina",
+        imageUrl: "/assets/images/islands/faial.jpg",
+        locationCount: 8
+    },
+    {
+        id: 4,
+        name: "Pico",
+        description: "Home to Portugal's highest mountain and renowned wine region",
+        imageUrl: "/assets/images/islands/pico.jpg",
+        locationCount: 7
+    },
+    {
+        id: 5,
+        name: "São Jorge",
+        description: "Famous for its dramatic cliffs and unique fajãs",
+        imageUrl: "/assets/images/islands/sao-jorge.jpg",
+        locationCount: 6
+    },
+    {
+        id: 6,
+        name: "Santa Maria",
+        description: "The oldest island with beautiful beaches and vineyards",
+        imageUrl: "/assets/images/islands/santa-maria.jpg",
+        locationCount: 5
+    },
+    {
+        id: 7,
+        name: "Graciosa",
+        description: "The White Island, known for its peaceful atmosphere",
+        imageUrl: "/assets/images/islands/graciosa.jpg",
+        locationCount: 4
+    },
+    {
+        id: 8,
+        name: "Flores",
+        description: "The westernmost island with stunning waterfalls and lakes",
+        imageUrl: "/assets/images/islands/flores.jpg",
+        locationCount: 5
+    },
+    {
+        id: 9,
+        name: "Corvo",
+        description: "The smallest island, offering tranquility and natural beauty",
+        imageUrl: "/assets/images/islands/corvo.jpg",
+        locationCount: 2
     }
-  ],
-  popularLocations: [],
-  recommendations: [],
-  weatherAlerts: []
-} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
+]]]></ee:set-payload>
             </ee:message>
         </ee:transform>
     </flow>
-    <flow name="get:\islands:experience-api-config">
-        <ee:transform doc:name="Transform Message">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
+    
+    <!-- ========================================== -->
+    <!-- LOCATIONS FLOWS -->
+    <!-- ========================================== -->
+    
+    <!-- GET /locations - Get all locations from Process API -->
+    <flow name="experience-get-locations">
+        <logger level="INFO" message="Experience API: Getting locations" />
+        <http:request method="GET" config-ref="Process_API_Config" path="/api/locations">
+            <http:query-params><![CDATA[#[output application/java
 ---
-[
-  {
-    name: "São Miguel",
-    description: "Maior ilha",
-    numeroPOIs: 45
-  }, 
-  {
-    name: "Terceira",
-    description: "Com história",
-    numeroPOIs: 32
-  }
-] as Array {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
+attributes.queryParams]]]></http:query-params>
+            <http:response-validator>
+                <http:success-status-code-validator values="200..299" />
+            </http:response-validator>
+        </http:request>
     </flow>
-    <flow name="get:\profile\itineraries:experience-api-config">
-        <ee:transform doc:name="Transform Message">
+    
+    <!-- GET /locations/{id} - Get location details -->
+    <flow name="experience-get-location-by-id">
+        <set-variable variableName="locationId" value="#[attributes.requestPath splitBy('/')[3]]" />
+        <logger level="INFO" message="Experience API: Getting location #[vars.locationId]" />
+        <http:request method="GET" config-ref="Process_API_Config" path="#['/api/locations/' ++ vars.locationId]">
+            <http:response-validator>
+                <http:success-status-code-validator values="200..299" />
+            </http:response-validator>
+        </http:request>
+    </flow>
+    
+    <!-- GET /locations/{id}/weather - Get location with weather -->
+    <flow name="experience-get-location-weather">
+        <set-variable variableName="locationId" value="#[attributes.requestPath splitBy('/')[3]]" />
+        <logger level="INFO" message="Experience API: Getting weather for location #[vars.locationId]" />
+        <http:request method="GET" config-ref="Process_API_Config" path="#['/api/locations/' ++ vars.locationId ++ '/weather']">
+            <http:response-validator>
+                <http:success-status-code-validator values="200..299" />
+            </http:response-validator>
+        </http:request>
+    </flow>
+    
+    <!-- ========================================== -->
+    <!-- ITINERARIES FLOWS -->
+    <!-- ========================================== -->
+    
+    <!-- GET /itineraries - Get user itineraries -->
+    <flow name="experience-get-itineraries">
+        <logger level="INFO" message="Experience API: Getting itineraries" />
+        <http:request method="GET" config-ref="Process_API_Config" path="/api/itineraries">
+            <http:query-params><![CDATA[#[output application/java
+---
+attributes.queryParams]]]></http:query-params>
+            <http:response-validator>
+                <http:success-status-code-validator values="200..299" />
+            </http:response-validator>
+        </http:request>
+    </flow>
+    
+    <!-- POST /itineraries - Create itinerary -->
+    <flow name="experience-post-itinerary">
+        <logger level="INFO" message="Experience API: Creating itinerary" />
+        <http:request method="POST" config-ref="Process_API_Config" path="/api/itineraries">
+            <http:body><![CDATA[#[payload]]]></http:body>
+            <http:response-validator>
+                <http:success-status-code-validator values="200..299" />
+            </http:response-validator>
+        </http:request>
+    </flow>
+    
+    <!-- GET /itineraries/{id} - Get itinerary by ID -->
+    <flow name="experience-get-itinerary-by-id">
+        <set-variable variableName="itineraryId" value="#[attributes.requestPath splitBy('/')[3]]" />
+        <logger level="INFO" message="Experience API: Getting itinerary #[vars.itineraryId]" />
+        <http:request method="GET" config-ref="Process_API_Config" path="#['/api/itineraries/' ++ vars.itineraryId]">
+            <http:response-validator>
+                <http:success-status-code-validator values="200..299" />
+            </http:response-validator>
+        </http:request>
+    </flow>
+    
+    <!-- ========================================== -->
+    <!-- RATINGS FLOWS -->
+    <!-- ========================================== -->
+    
+    <!-- GET /ratings - Get ratings -->
+    <flow name="experience-get-ratings">
+        <logger level="INFO" message="Experience API: Getting ratings" />
+        <http:request method="GET" config-ref="Process_API_Config" path="/api/ratings">
+            <http:query-params><![CDATA[#[output application/java
+---
+attributes.queryParams]]]></http:query-params>
+            <http:response-validator>
+                <http:success-status-code-validator values="200..299" />
+            </http:response-validator>
+        </http:request>
+    </flow>
+    
+    <!-- POST /ratings - Submit rating -->
+    <flow name="experience-post-rating">
+        <logger level="INFO" message="Experience API: Submitting rating" />
+        <http:request method="POST" config-ref="Process_API_Config" path="/api/ratings">
+            <http:body><![CDATA[#[payload]]]></http:body>
+            <http:response-validator>
+                <http:success-status-code-validator values="200..299" />
+            </http:response-validator>
+        </http:request>
+    </flow>
+    
+    <!-- ========================================== -->
+    <!-- FAVORITES FLOWS -->
+    <!-- ========================================== -->
+    
+    <!-- GET /favorites - Get user favorites -->
+    <flow name="experience-get-favorites">
+        <logger level="INFO" message="Experience API: Getting favorites" />
+        <http:request method="GET" config-ref="Process_API_Config" path="/api/favorites">
+            <http:query-params><![CDATA[#[output application/java
+---
+attributes.queryParams]]]></http:query-params>
+            <http:response-validator>
+                <http:success-status-code-validator values="200..299" />
+            </http:response-validator>
+        </http:request>
+    </flow>
+    
+    <!-- POST /favorites - Add favorite -->
+    <flow name="experience-post-favorite">
+        <logger level="INFO" message="Experience API: Adding favorite" />
+        <http:request method="POST" config-ref="Process_API_Config" path="/api/favorites">
+            <http:body><![CDATA[#[payload]]]></http:body>
+            <http:response-validator>
+                <http:success-status-code-validator values="200..299" />
+            </http:response-validator>
+        </http:request>
+    </flow>
+    
+    <!-- DELETE /favorites/{id} - Remove favorite -->
+    <flow name="experience-delete-favorite">
+        <set-variable variableName="favoriteId" value="#[attributes.requestPath splitBy('/')[3]]" />
+        <logger level="INFO" message="Experience API: Deleting favorite #[vars.favoriteId]" />
+        <http:request method="DELETE" config-ref="Process_API_Config" path="#['/api/favorites/' ++ vars.favoriteId]">
+            <http:response-validator>
+                <http:success-status-code-validator values="200..299" />
+            </http:response-validator>
+        </http:request>
+    </flow>
+    
+    <!-- ========================================== -->
+    <!-- ADMIN FLOWS -->
+    <!-- ========================================== -->
+    
+    <!-- GET /admin/users - Get all users -->
+    <flow name="experience-get-users">
+        <logger level="INFO" message="Experience API: Getting all users (admin)" />
+        <http:request method="GET" config-ref="Database_API_Config" path="/api/users">
+            <http:response-validator>
+                <http:success-status-code-validator values="200..299" />
+            </http:response-validator>
+        </http:request>
+    </flow>
+    
+    <!-- GET /admin/integrations - Check system integrations status -->
+    <flow name="experience-get-integrations">
+        <logger level="INFO" message="Experience API: Checking integrations (admin)" />
+        <ee:transform>
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
 {
-  data: [
-    {
-      id: 1,
-      name: "3 Dias São Miguel",
-      startDate: "2025-12-01",
-      endDate: "2025-12-03",
-      numberOfLocations: 5,
-      totalDistance: 120.5
+    database: {
+        status: "connected",
+        port: 8083,
+        lastChecked: now() as String
+    },
+    openMeteo: {
+        status: "connected",
+        port: 8081,
+        lastChecked: now() as String
+    },
+    geoapify: {
+        status: "connected",
+        port: 8082,
+        lastChecked: now() as String
+    },
+    processApi: {
+        status: "connected",
+        port: 8084,
+        lastChecked: now() as String
     }
-  ],
-  pagination: {
-    total: 1
-  }
-} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
+}]]></ee:set-payload>
             </ee:message>
         </ee:transform>
     </flow>
-    <flow name="get:\locations:experience-api-config">
-        <ee:transform doc:name="Transform Message">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-[
-  {
-    id: 1,
-    name: "Lagoa das Sete Cidades",
-    category: "Miradouro",
-    island: "São Miguel",
-    imageUrl: "https://example.com/sete-cidades.jpg",
-    description: "Lagoa icónica com paisagem única nos Açores.",
-    rating: 4.8,
-    ratingCount: 342
-  }, 
-  {
-    id: 2,
-    name: "Furnas",
-    category: "Termas",
-    island: "São Miguel",
-    imageUrl: "https://example.com/furnas.jpg",
-    description: "Caldeiras vulcânicas e águas termais.",
-    rating: 4.7,
-    ratingCount: 280
-  }
-] as Array {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-    </flow>
-    <flow name="get:\profile:experience-api-config">
-        <ee:transform doc:name="Transform Message">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-  id: 42,
-  name: "João Silva",
-  email: "joao@example.com",
-  preferences: {},
-  statistics: {}
-} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-    </flow>
-    <flow name="get:\locations\(id)\ratings:experience-api-config">
-        <ee:transform doc:name="Transform Message">
-            <ee:variables>
-                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
-            </ee:variables>
-        </ee:transform>
-        <ee:transform doc:name="Transform Message">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-  total: 342,
-  average: 4.8,
-  ratings: [
-    {
-      id: 1001,
-      userName: "João Silva",
-      rating: 5
-    }
-  ]
-} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-    </flow>
-    <flow name="get:\recommendations:experience-api-config">
-        <ee:transform doc:name="Transform Message">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-[
-  {
-    id: 10,
-    name: "Caldeira Velha",
-    category: "Cascata",
-    island: "São Miguel",
-    imageUrl: "https://example.com/caldeira-velha.jpg",
-    description: "Cascata termal natural com piscinas naturais.",
-    rating: 4.9,
-    ratingCount: 421
-  }
-] as Array {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-    </flow>
-    <flow name="get:\search:experience-api-config">
-        <ee:transform doc:name="Transform Message">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-  query: "lagoa",
-  results: {
-    locations: [],
-    islands: []
-  }
-} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-    </flow>
-    <flow name="get:\locations\(id)\weather:experience-api-config">
-        <ee:transform doc:name="Transform Message">
-            <ee:variables>
-                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
-            </ee:variables>
-        </ee:transform>
-        <ee:transform doc:name="Transform Message">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-  current: {
-    temperature: 18.5,
-    condition: "Cloudy",
-    windSpeed: 25,
-    humidity: 87
-  },
-  forecast: []
-} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-    </flow>
-    <flow name="get:\locations\(id):experience-api-config">
-        <ee:transform doc:name="Transform Message">
-            <ee:variables>
-                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
-            </ee:variables>
-        </ee:transform>
-        <ee:transform doc:name="Transform Message">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-  id: 1,
-  name: "Lagoa das Sete Cidades",
-  category: "Miradouro",
-  island: "São Miguel",
-  ratings: {
-    average: 4.8,
-    total: 342
-  }
-} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-    </flow>
-    <flow name="get:\islands\(islandName):experience-api-config">
-        <ee:transform doc:name="Transform Message">
-            <ee:variables>
-                <ee:set-variable variableName="islandName">attributes.uriParams.'islandName'</ee:set-variable>
-            </ee:variables>
-        </ee:transform>
-        <ee:transform doc:name="Transform Message">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-  name: "São Miguel",
-  description: "Maior ilha dos Açores",
-  pois: []
-} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-    </flow>
-    <flow name="get:\profile\itineraries\(itineraryId):experience-api-config">
-        <ee:transform doc:name="Transform Message">
-            <ee:variables>
-                <ee:set-variable variableName="itineraryId">attributes.uriParams.'itineraryId'</ee:set-variable>
-            </ee:variables>
-        </ee:transform>
-        <ee:transform doc:name="Transform Message">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-  id: 1,
-  name: "3 Dias São Miguel",
-  startDate: "2025-12-01",
-  endDate: "2025-12-03",
-  numberOfLocations: 5,
-  locations: []
-} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-    </flow>
-    <flow name="post:\profile\favorites:application\json:experience-api-config">
-        <ee:transform doc:name="Transform Message">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-  error: "Bad Request",
-  message: "Missing or invalid parameter"
-} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-    </flow>
-    <flow name="post:\profile\itineraries:application\json:experience-api-config">
-        <ee:transform doc:name="Transform Message">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-  id: 1,
-  name: "3 Dias São Miguel",
-  startDate: "2025-12-01",
-  endDate: "2025-12-03",
-  numberOfLocations: 5,
-  totalDistance: 120.5
-} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-    </flow>
-    <flow name="post:\auth\login:application\json:experience-api-config">
-        <ee:transform doc:name="Transform Message">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-  token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  expiresIn: 86400,
-  user: {
-    id: 42,
-    name: "João Silva",
-    email: "joao@example.com"
-  }
-} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-    </flow>
-    <flow name="post:\auth\logout:experience-api-config">
-        <ee:transform doc:name="Transform Message">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-  error: "Unauthorized",
-  message: "Invalid or expired token"
-} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-    </flow>
-    <flow name="post:\profile\itineraries\(itineraryId)\optimize:experience-api-config">
-        <ee:transform doc:name="Transform Message">
-            <ee:variables>
-                <ee:set-variable variableName="itineraryId">attributes.uriParams.'itineraryId'</ee:set-variable>
-            </ee:variables>
-        </ee:transform>
-        <ee:transform doc:name="Transform Message">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-  id: 1,
-  name: "3 Dias São Miguel",
-  startDate: "2025-12-01",
-  endDate: "2025-12-03",
-  numberOfLocations: 5,
-  totalDistance: 120.5
-} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-    </flow>
-    <flow name="post:\locations\(id)\ratings:application\json:experience-api-config">
-        <ee:transform doc:name="Transform Message">
-            <ee:variables>
-                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
-            </ee:variables>
-        </ee:transform>
-        <ee:transform doc:name="Transform Message">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-  id: 1001,
-  message: "Rating submitted",
-  newAverageRating: 4.85
-} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-    </flow>
-    <flow name="post:\auth\register:application\json:experience-api-config">
-        <ee:transform doc:name="Transform Message">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-  token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  expiresIn: 86400,
-  user: {
-    id: 42,
-    name: "João Silva",
-    email: "joao@example.com"
-  }
-} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-    </flow>
+    
 </mule>
