@@ -29,13 +29,11 @@ http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/m
                    httpStatusVarName="httpStatus" />
     
     <!-- API Autodiscovery - COMMENTED OUT FOR LOCAL TESTING -->
-    <!--
-    <api-gateway:autodiscovery apiId="20617159" 
-                               ignoreBasePath="true" 
-                               doc:name="API Autodiscovery" 
-                               doc:id="b561f39c-f065-4f9a-b868-bdd91b7641a7" 
-                               flowRef="system_api_geoapify-main" />
-    -->
+    <api-gateway:autodiscovery 
+    apiId="20617159" 
+    ignoreBasePath="true" 
+    doc:name="API Autodiscovery" 
+    flowRef="system_api_geoapify-main" />
     
     <!-- Main Flow -->
     <flow name="system_api_geoapify-main">

@@ -29,13 +29,11 @@ http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/m
                    httpStatusVarName="httpStatus" />
     
     <!-- API Autodiscovery -->
-    <!--
-    <api-gateway:autodiscovery apiId="20617163" 
-                               ignoreBasePath="true" 
-                               doc:name="API Autodiscovery" 
-                               doc:id="3ce51771-379d-44e8-b588-0bb2042028f7" 
-                               flowRef="system_api_openmeteo-main" />
-    -->
+    <api-gateway:autodiscovery 
+    apiId="20617163" 
+    ignoreBasePath="true" 
+    doc:name="API Autodiscovery" 
+    flowRef="system_api_openmeteo-main" />
     
     <!-- Main Flow -->
     <flow name="system_api_openmeteo-main">
