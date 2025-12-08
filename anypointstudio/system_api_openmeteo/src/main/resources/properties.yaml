@@ -1,0 +1,12 @@
+# API Configuration
+api:
+  id: "20617163"
+
+# HTTP Configuration
+http:
+  port: "8081"
+
+# Open-Meteo Configuration
+openmeteo:
+  api:
+    url: "https://api.open-meteo.com"

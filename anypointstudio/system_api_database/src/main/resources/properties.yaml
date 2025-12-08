@@ -1,0 +1,15 @@
+# API Configuration
+api:
+  id: "20617158"
+
+# HTTP Configuration
+http:
+  port: "8081"
+
+# Database Configuration
+db:
+  host: "db4free.net"
+  port: "3306"
+  database: "your_database_name"
+  username: "your_username"
+  password: "your_password"

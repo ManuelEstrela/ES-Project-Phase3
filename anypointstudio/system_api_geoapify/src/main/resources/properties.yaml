@@ -1,0 +1,13 @@
+# API Configuration
+api:
+  id: "20617159"
+
+# HTTP Configuration
+http:
+  port: "8081"
+
+# Geoapify Configuration
+geoapify:
+  api:
+    key: "6cf58d1146e2468eaa227f88bdd3d642"
+    url: "https://api.geoapify.com"
