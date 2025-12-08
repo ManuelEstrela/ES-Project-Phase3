@@ -1,374 +1,248 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<mule xmlns:mongodb="http://www.mulesoft.org/schema/mule/mongodb"
-      xmlns="http://www.mulesoft.org/schema/mule/core" 
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" 
       xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" 
-      xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" 
       xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" 
       xmlns:http="http://www.mulesoft.org/schema/mule/http" 
       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
       xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd 
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd 
 http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd 
-http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd 
-http://www.mulesoft.org/schema/mule/mongodb http://www.mulesoft.org/schema/mule/mongodb/current/mule-mongodb.xsd">
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
     
-    <!-- MongoDB Configuration -->
-    <mongodb:config name="MongoDB_Config" doc:name="MongoDB Config">
-        <mongodb:connection connectionString="${mongodb.connection.string}" 
-                          database="${mongodb.database}" />
-    </mongodb:config>
+    <!-- Load Properties File -->
+    <configuration-properties file="properties.yaml"/>
     
     <!-- HTTP Listener Configuration -->
-    <http:listener-config name="system_api_database-httpListenerConfig">
+    <http:listener-config name="httpListenerConfig">
         <http:listener-connection host="0.0.0.0" port="${http.port}" />
     </http:listener-config>
     
     <!-- APIKit Configuration -->
-    <apikit:config name="system_api_database-config" api="resource::1782ea4a-5a87-4bb9-8106-5f1c978c57b1:system_api_database:1.0.0:raml:zip:system_api_database.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
-    
-    <!-- API Autodiscovery - REMOVED (will add after deployment works) -->
+    <apikit:config name="apiConfig" api="resource::1782ea4a-5a87-4bb9-8106-5f1c978c57b1:system_api_database:1.0.0:raml:zip:system_api_database.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
     
     <!-- Main Flow -->
-	<flow name="system_api_database-main">
-        <http:listener config-ref="system_api_database-httpListenerConfig" path="/api/*">
+    <flow name="main">
+        <http:listener config-ref="httpListenerConfig" path="/api/*">
             <http:response statusCode="#[vars.httpStatus default 200]">
                 <http:headers>#[vars.outboundHeaders default {}]</http:headers>
             </http:response>
-            <http:error-response statusCode="#[vars.httpStatus default 500]">
-                <http:body>#[payload]</http:body>
-                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
-            </http:error-response>
         </http:listener>
-        <apikit:router config-ref="system_api_database-config" />
-        <error-handler>
-            <on-error-propagate type="APIKIT:BAD_REQUEST">
-                <ee:transform doc:name="Transform Message">
-                    <ee:message>
-                        <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{message: "Bad request"}]]></ee:set-payload>
-                    </ee:message>
-                    <ee:variables>
-                        <ee:set-variable variableName="httpStatus">400</ee:set-variable>
-                    </ee:variables>
-                </ee:transform>
-            </on-error-propagate>
-            <on-error-propagate type="APIKIT:NOT_FOUND">
-                <ee:transform doc:name="Transform Message">
-                    <ee:message>
-                        <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{message: "Resource not found"}]]></ee:set-payload>
-                    </ee:message>
-                    <ee:variables>
-                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
-                    </ee:variables>
-                </ee:transform>
-            </on-error-propagate>
-            <on-error-propagate type="APIKIT:METHOD_NOT_ALLOWED">
-                <ee:transform doc:name="Transform Message">
-                    <ee:message>
-                        <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{message: "Method not allowed"}]]></ee:set-payload>
-                    </ee:message>
-                    <ee:variables>
-                        <ee:set-variable variableName="httpStatus">405</ee:set-variable>
-                    </ee:variables>
-                </ee:transform>
-            </on-error-propagate>
-            <on-error-propagate type="APIKIT:NOT_ACCEPTABLE">
-                <ee:transform doc:name="Transform Message">
-                    <ee:message>
-                        <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{message: "Not acceptable"}]]></ee:set-payload>
-                    </ee:message>
-                    <ee:variables>
-                        <ee:set-variable variableName="httpStatus">406</ee:set-variable>
-                    </ee:variables>
-                </ee:transform>
-            </on-error-propagate>
-            <on-error-propagate type="APIKIT:UNSUPPORTED_MEDIA_TYPE">
-                <ee:transform doc:name="Transform Message">
-                    <ee:message>
-                        <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{message: "Unsupported media type"}]]></ee:set-payload>
-                    </ee:message>
-                    <ee:variables>
-                        <ee:set-variable variableName="httpStatus">415</ee:set-variable>
-                    </ee:variables>
-                </ee:transform>
-            </on-error-propagate>
-            <on-error-propagate type="APIKIT:NOT_IMPLEMENTED">
-                <ee:transform doc:name="Transform Message">
-                    <ee:message>
-                        <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{message: "Not Implemented"}]]></ee:set-payload>
-                    </ee:message>
-                    <ee:variables>
-                        <ee:set-variable variableName="httpStatus">501</ee:set-variable>
-                    </ee:variables>
-                </ee:transform>
-            </on-error-propagate>
-        </error-handler>
+        <apikit:router config-ref="apiConfig" />
     </flow>
     
-    <!-- Console Flow -->
-    <flow name="system_api_database-console">
-        <http:listener config-ref="system_api_database-httpListenerConfig" path="/console/*">
-            <http:response statusCode="#[vars.httpStatus default 200]">
-                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
-            </http:response>
-            <http:error-response statusCode="#[vars.httpStatus default 500]">
-                <http:body>#[payload]</http:body>
-                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
-            </http:error-response>
-        </http:listener>
-        <apikit:console config-ref="system_api_database-config" />
-        <error-handler>
-            <on-error-propagate type="APIKIT:NOT_FOUND">
-                <ee:transform doc:name="Transform Message">
-                    <ee:message>
-                        <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{message: "Resource not found"}]]></ee:set-payload>
-                    </ee:message>
-                    <ee:variables>
-                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
-                    </ee:variables>
-                </ee:transform>
-            </on-error-propagate>
-        </error-handler>
-    </flow>
-    
-    <!-- ============================================ -->
-    <!-- USER ENDPOINTS -->
-    <!-- ============================================ -->
-    
-    <!-- POST /users - Register new user -->
-    <flow name="post:\users:application\json:system_api_database-config">
-        <logger level="INFO" message="Creating user: #[payload.email]" doc:name="Logger"/>
-        
-        <ee:transform doc:name="Prepare User Document">
+    <!-- POST /users - Register -->
+    <flow name="post:\users:application\json:apiConfig">
+        <ee:transform>
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
 {
-    name: payload.name,
-    email: payload.email,
-    password: payload.password,
+    token: "mock-token-" ++ randomInt(99999),
+    expiresIn: 86400,
+    user: {
+        id: "user-" ++ randomInt(99999),
+        name: payload.name,
+        email: payload.email
+    }
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    
+    <!-- POST /users/login -->
+    <flow name="post:\users\login:application\json:apiConfig">
+        <ee:transform>
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    token: "mock-token-" ++ randomInt(99999),
+    expiresIn: 86400,
+    user: {
+        id: "user-123",
+        name: "Demo User",
+        email: payload.email
+    }
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    
+    <!-- GET /locations -->
+    <flow name="get:\locations:apiConfig">
+        <ee:transform>
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+[
+    {
+        id: "1",
+        name: "Lagoa do Fogo",
+        description: "Beautiful crater lake in São Miguel",
+        island: "São Miguel",
+        latitude: 37.7688,
+        longitude: -25.4734,
+        category: "Nature",
+        image_url: "https://example.com/lagoa-fogo.jpg"
+    },
+    {
+        id: "2",
+        name: "Sete Cidades",
+        description: "Twin lakes with stunning views",
+        island: "São Miguel",
+        latitude: 37.8579,
+        longitude: -25.7887,
+        category: "Nature",
+        image_url: "https://example.com/sete-cidades.jpg"
+    },
+    {
+        id: "3",
+        name: "Furnas",
+        description: "Volcanic hot springs and thermal baths",
+        island: "São Miguel",
+        latitude: 37.7743,
+        longitude: -25.3208,
+        category: "Hot Springs",
+        image_url: "https://example.com/furnas.jpg"
+    }
+]]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    
+    <!-- POST /locations -->
+    <flow name="post:\locations:application\json:apiConfig">
+        <ee:transform>
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload ++ {
+    id: "new-" ++ randomInt(99999)
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    
+    <!-- GET /locations/{locationId} -->
+    <flow name="get:\locations\(locationId):apiConfig">
+        <ee:transform>
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    id: attributes.uriParams.locationId,
+    name: "Lagoa do Fogo",
+    description: "Beautiful crater lake",
+    island: "São Miguel",
+    latitude: 37.7688,
+    longitude: -25.4734,
+    category: "Nature",
+    image_url: "https://example.com/image.jpg"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    
+    <!-- PATCH /locations/{locationId} -->
+    <flow name="patch:\locations\(locationId):application\json:apiConfig">
+        <ee:transform>
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload ++ {
+    id: attributes.uriParams.locationId
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    
+    <!-- DELETE /locations/{locationId} -->
+    <flow name="delete:\locations\(locationId):apiConfig">
+        <ee:transform>
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+null]]></ee:set-payload>
+            </ee:message>
+            <ee:variables>
+                <ee:set-variable variableName="httpStatus">204</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+    </flow>
+    
+    <!-- GET /ratings -->
+    <flow name="get:\ratings:apiConfig">
+        <ee:transform>
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+[]]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    
+    <!-- POST /ratings -->
+    <flow name="post:\ratings:application\json:apiConfig">
+        <ee:transform>
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload ++ {
+    id: "rating-" ++ randomInt(99999),
+    created_at: now() as String
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    
+    <!-- GET /users/{userId} -->
+    <flow name="get:\users\(userId):apiConfig">
+        <ee:transform>
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    id: attributes.uriParams.userId,
+    name: "Demo User",
+    email: "demo@example.com",
     role: "user",
-    created_at: now()
-}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-        
-        <mongodb:insert-document config-ref="MongoDB_Config" 
-                                collectionName="users" 
-                                doc:name="Insert User"/>
-        
-        <mongodb:find-documents config-ref="MongoDB_Config" 
-                              collectionName="users" 
-                              doc:name="Find User">
-            <mongodb:find-query><![CDATA[#[%dw 2.0
-output application/json
----
-{
-    "email": payload.email
-}]]]></mongodb:find-query>
-        </mongodb:find-documents>
-        
-        <ee:transform doc:name="Transform Response">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-    token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.demo",
-    expiresIn: 86400,
-    user: {
-        id: payload[0].'_id' as String,
-        name: payload[0].name,
-        email: payload[0].email
-    }
+    created_at: now() as String
 }]]></ee:set-payload>
             </ee:message>
         </ee:transform>
     </flow>
     
-    <!-- POST /users/login - Login user -->
-    <flow name="post:\users\login:application\json:system_api_database-config">
-        <logger level="INFO" message="User login attempt: #[payload.email]" doc:name="Logger"/>
-        
-        <mongodb:find-documents config-ref="MongoDB_Config" 
-                              collectionName="users" 
-                              doc:name="Find User">
-            <mongodb:find-query><![CDATA[#[%dw 2.0
-output application/json
----
-{
-    "email": payload.email
-}]]]></mongodb:find-query>
-        </mongodb:find-documents>
-        
-        <ee:transform doc:name="Transform Response">
+    <!-- PATCH /users/{userId} -->
+    <flow name="patch:\users\(userId):application\json:apiConfig">
+        <ee:transform>
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
 {
-    token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.demo",
-    expiresIn: 86400,
-    user: {
-        id: payload[0].'_id' as String,
-        name: payload[0].name,
-        email: payload[0].email
-    }
+    id: attributes.uriParams.userId,
+    name: payload.name,
+    email: "demo@example.com",
+    role: "user",
+    created_at: now() as String
 }]]></ee:set-payload>
             </ee:message>
         </ee:transform>
     </flow>
     
-    <!-- GET /users/{userId} - Get user by ID -->
-    <flow name="get:\users\(userId):system_api_database-config">
-        <ee:transform doc:name="Extract userId">
-            <ee:variables>
-                <ee:set-variable variableName="userId">attributes.uriParams.'userId'</ee:set-variable>
-            </ee:variables>
-        </ee:transform>
-        
-        <logger level="INFO" message="Getting user: #[vars.userId]" doc:name="Logger"/>
-        
-        <mongodb:find-documents config-ref="MongoDB_Config" 
-                              collectionName="users" 
-                              doc:name="Find User">
-            <mongodb:find-query><![CDATA[#[%dw 2.0
-output application/json
----
-{
-    "_id": {
-        "$oid": vars.userId
-    }
-}]]]></mongodb:find-query>
-        </mongodb:find-documents>
-        
-        <ee:transform doc:name="Transform Response">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-    id: payload[0].'_id' as String,
-    name: payload[0].name,
-    email: payload[0].email,
-    role: payload[0].role,
-    created_at: payload[0].created_at as String
-}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-    </flow>
-    
-    <!-- PATCH /users/{userId} - Update user -->
-    <flow name="patch:\users\(userId):application\json:system_api_database-config">
-        <ee:transform doc:name="Extract userId">
-            <ee:variables>
-                <ee:set-variable variableName="userId">attributes.uriParams.'userId'</ee:set-variable>
-            </ee:variables>
-        </ee:transform>
-        
-        <logger level="INFO" message="Updating user: #[vars.userId]" doc:name="Logger"/>
-        
-        <ee:transform doc:name="Prepare Update">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-    "filter": {
-        "_id": {
-            "$oid": vars.userId
-        }
-    },
-    "update": {
-        "$set": {
-            "name": payload.name
-        }
-    }
-}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-        
-        <mongodb:update-documents config-ref="MongoDB_Config" 
-                                collectionName="users" 
-                                doc:name="Update User">
-            <mongodb:find-query>#[payload.filter]</mongodb:find-query>
-            <mongodb:content-to-update>#[payload.update]</mongodb:content-to-update>
-        </mongodb:update-documents>
-        
-        <mongodb:find-documents config-ref="MongoDB_Config" 
-                              collectionName="users" 
-                              doc:name="Find Updated User">
-            <mongodb:find-query><![CDATA[#[%dw 2.0
-output application/json
----
-{
-    "_id": {
-        "$oid": vars.userId
-    }
-}]]]></mongodb:find-query>
-        </mongodb:find-documents>
-        
-        <ee:transform doc:name="Transform Response">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-    id: payload[0].'_id' as String,
-    name: payload[0].name,
-    email: payload[0].email,
-    role: payload[0].role,
-    created_at: payload[0].created_at as String
-}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-    </flow>
-    
-    <!-- DELETE /users/{userId} - Delete user -->
-    <flow name="delete:\users\(userId):system_api_database-config">
-        <ee:transform doc:name="Extract userId">
-            <ee:variables>
-                <ee:set-variable variableName="userId">attributes.uriParams.'userId'</ee:set-variable>
-            </ee:variables>
-        </ee:transform>
-        
-        <logger level="INFO" message="Deleting user: #[vars.userId]" doc:name="Logger"/>
-        
-        <mongodb:remove-documents config-ref="MongoDB_Config" 
-                                collectionName="users" 
-                                doc:name="Delete User">
-            <mongodb:find-query><![CDATA[#[%dw 2.0
-output application/json
----
-{
-    "_id": {
-        "$oid": vars.userId
-    }
-}]]]></mongodb:find-query>
-        </mongodb:remove-documents>
-        
-        <ee:transform doc:name="Transform Response">
+    <!-- DELETE /users/{userId} -->
+    <flow name="delete:\users\(userId):apiConfig">
+        <ee:transform>
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
@@ -381,426 +255,24 @@ null]]></ee:set-payload>
         </ee:transform>
     </flow>
     
-    <!-- ============================================ -->
-    <!-- LOCATION ENDPOINTS -->
-    <!-- ============================================ -->
-    
-    <!-- GET /locations - List locations -->
-    <flow name="get:\locations:system_api_database-config">
-        <logger level="INFO" message="Getting locations" doc:name="Logger"/>
-        
-        <mongodb:find-documents config-ref="MongoDB_Config" 
-                              collectionName="locations" 
-                              doc:name="Find Locations">
-            <mongodb:find-query><![CDATA[#[%dw 2.0
-output application/json
----
-{}]]]></mongodb:find-query>
-        </mongodb:find-documents>
-        
-        <ee:transform doc:name="Transform Response">
+    <!-- PATCH /ratings/{ratingId} -->
+    <flow name="patch:\ratings\(ratingId):application\json:apiConfig">
+        <ee:transform>
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
-payload map {
-    id: $.'_id' as String,
-    name: $.name,
-    description: $.description,
-    island: $.island,
-    latitude: $.latitude,
-    longitude: $.longitude,
-    category: $.category,
-    image_url: $.image_url
+payload ++ {
+    id: attributes.uriParams.ratingId,
+    created_at: now() as String
 }]]></ee:set-payload>
             </ee:message>
         </ee:transform>
     </flow>
     
-    <!-- POST /locations - Create location -->
-    <flow name="post:\locations:application\json:system_api_database-config">
-        <logger level="INFO" message="Creating location: #[payload.name]" doc:name="Logger"/>
-        
-        <ee:transform doc:name="Prepare Location Document">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-    name: payload.name,
-    description: payload.description,
-    island: payload.island,
-    latitude: payload.latitude,
-    longitude: payload.longitude,
-    category: payload.category default "",
-    image_url: payload.image_url default "",
-    created_at: now()
-}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-        
-        <mongodb:insert-document config-ref="MongoDB_Config" 
-                                collectionName="locations" 
-                                doc:name="Insert Location"/>
-        
-        <ee:transform doc:name="Transform Response">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-    id: payload.'_id' as String,
-    name: payload.name,
-    description: payload.description,
-    island: payload.island,
-    latitude: payload.latitude,
-    longitude: payload.longitude,
-    category: payload.category,
-    image_url: payload.image_url
-}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-    </flow>
-    
-    <!-- GET /locations/{locationId} - Get location details -->
-    <flow name="get:\locations\(locationId):system_api_database-config">
-        <ee:transform doc:name="Extract locationId">
-            <ee:variables>
-                <ee:set-variable variableName="locationId">attributes.uriParams.'locationId'</ee:set-variable>
-            </ee:variables>
-        </ee:transform>
-        
-        <logger level="INFO" message="Getting location: #[vars.locationId]" doc:name="Logger"/>
-        
-        <mongodb:find-documents config-ref="MongoDB_Config" 
-                              collectionName="locations" 
-                              doc:name="Find Location">
-            <mongodb:find-query><![CDATA[#[%dw 2.0
-output application/json
----
-{
-    "_id": {
-        "$oid": vars.locationId
-    }
-}]]]></mongodb:find-query>
-        </mongodb:find-documents>
-        
-        <ee:transform doc:name="Transform Response">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-    id: payload[0].'_id' as String,
-    name: payload[0].name,
-    description: payload[0].description,
-    island: payload[0].island,
-    latitude: payload[0].latitude,
-    longitude: payload[0].longitude,
-    category: payload[0].category,
-    image_url: payload[0].image_url
-}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-    </flow>
-    
-    <!-- PATCH /locations/{locationId} - Update location -->
-    <flow name="patch:\locations\(locationId):application\json:system_api_database-config">
-        <ee:transform doc:name="Extract locationId">
-            <ee:variables>
-                <ee:set-variable variableName="locationId">attributes.uriParams.'locationId'</ee:set-variable>
-            </ee:variables>
-        </ee:transform>
-        
-        <logger level="INFO" message="Updating location: #[vars.locationId]" doc:name="Logger"/>
-        
-        <ee:transform doc:name="Prepare Update">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-    "filter": {
-        "_id": {
-            "$oid": vars.locationId
-        }
-    },
-    "update": {
-        "$set": payload
-    }
-}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-        
-        <mongodb:update-documents config-ref="MongoDB_Config" 
-                                collectionName="locations" 
-                                doc:name="Update Location">
-            <mongodb:find-query>#[payload.filter]</mongodb:find-query>
-            <mongodb:content-to-update>#[payload.update]</mongodb:content-to-update>
-        </mongodb:update-documents>
-        
-        <mongodb:find-documents config-ref="MongoDB_Config" 
-                              collectionName="locations" 
-                              doc:name="Find Updated Location">
-            <mongodb:find-query><![CDATA[#[%dw 2.0
-output application/json
----
-{
-    "_id": {
-        "$oid": vars.locationId
-    }
-}]]]></mongodb:find-query>
-        </mongodb:find-documents>
-        
-        <ee:transform doc:name="Transform Response">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-    id: payload[0].'_id' as String,
-    name: payload[0].name,
-    description: payload[0].description,
-    island: payload[0].island,
-    latitude: payload[0].latitude,
-    longitude: payload[0].longitude,
-    category: payload[0].category,
-    image_url: payload[0].image_url
-}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-    </flow>
-    
-    <!-- DELETE /locations/{locationId} - Delete location -->
-    <flow name="delete:\locations\(locationId):system_api_database-config">
-        <ee:transform doc:name="Extract locationId">
-            <ee:variables>
-                <ee:set-variable variableName="locationId">attributes.uriParams.'locationId'</ee:set-variable>
-            </ee:variables>
-        </ee:transform>
-        
-        <logger level="INFO" message="Deleting location: #[vars.locationId]" doc:name="Logger"/>
-        
-        <mongodb:remove-documents config-ref="MongoDB_Config" 
-                                collectionName="locations" 
-                                doc:name="Delete Location">
-            <mongodb:find-query><![CDATA[#[%dw 2.0
-output application/json
----
-{
-    "_id": {
-        "$oid": vars.locationId
-    }
-}]]]></mongodb:find-query>
-        </mongodb:remove-documents>
-        
-        <ee:transform doc:name="Transform Response">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-null]]></ee:set-payload>
-            </ee:message>
-            <ee:variables>
-                <ee:set-variable variableName="httpStatus">204</ee:set-variable>
-            </ee:variables>
-        </ee:transform>
-    </flow>
-    
-    <!-- ============================================ -->
-    <!-- RATING ENDPOINTS -->
-    <!-- ============================================ -->
-    
-    <!-- GET /ratings - List ratings -->
-    <flow name="get:\ratings:system_api_database-config">
-        <logger level="INFO" message="Getting ratings" doc:name="Logger"/>
-        
-        <choice doc:name="Choice">
-            <when expression="#[!isEmpty(attributes.queryParams.locationId)]">
-                <mongodb:find-documents config-ref="MongoDB_Config" 
-                                      collectionName="ratings" 
-                                      doc:name="Find By Location">
-                    <mongodb:find-query><![CDATA[#[%dw 2.0
-output application/json
----
-{
-    "location_id": attributes.queryParams.locationId
-}]]]></mongodb:find-query>
-                </mongodb:find-documents>
-            </when>
-            <when expression="#[!isEmpty(attributes.queryParams.userId)]">
-                <mongodb:find-documents config-ref="MongoDB_Config" 
-                                      collectionName="ratings" 
-                                      doc:name="Find By User">
-                    <mongodb:find-query><![CDATA[#[%dw 2.0
-output application/json
----
-{
-    "user_id": attributes.queryParams.userId
-}]]]></mongodb:find-query>
-                </mongodb:find-documents>
-            </when>
-            <otherwise>
-                <mongodb:find-documents config-ref="MongoDB_Config" 
-                                      collectionName="ratings" 
-                                      doc:name="Find All">
-                    <mongodb:find-query><![CDATA[#[%dw 2.0
-output application/json
----
-{}]]]></mongodb:find-query>
-                </mongodb:find-documents>
-            </otherwise>
-        </choice>
-        
-        <ee:transform doc:name="Transform Response">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-payload map {
-    id: $.'_id' as String,
-    location_id: $.location_id,
-    user_id: $.user_id,
-    rating: $.rating,
-    comment: $.comment,
-    created_at: $.created_at as String
-}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-    </flow>
-    
-    <!-- POST /ratings - Create rating -->
-    <flow name="post:\ratings:application\json:system_api_database-config">
-        <logger level="INFO" message="Creating rating for location: #[payload.locationId]" doc:name="Logger"/>
-        
-        <ee:transform doc:name="Prepare Rating Document">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-    location_id: payload.locationId,
-    user_id: payload.userId,
-    rating: payload.rating,
-    comment: payload.comment default "",
-    created_at: now()
-}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-        
-        <mongodb:insert-document config-ref="MongoDB_Config" 
-                                collectionName="ratings" 
-                                doc:name="Insert Rating"/>
-        
-        <ee:transform doc:name="Transform Response">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-    id: payload.'_id' as String,
-    location_id: payload.location_id,
-    user_id: payload.user_id,
-    rating: payload.rating,
-    comment: payload.comment,
-    created_at: payload.created_at as String
-}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-    </flow>
-    
-    <!-- PATCH /ratings/{ratingId} - Update rating -->
-    <flow name="patch:\ratings\(ratingId):application\json:system_api_database-config">
-        <ee:transform doc:name="Extract ratingId">
-            <ee:variables>
-                <ee:set-variable variableName="ratingId">attributes.uriParams.'ratingId'</ee:set-variable>
-            </ee:variables>
-        </ee:transform>
-        
-        <logger level="INFO" message="Updating rating: #[vars.ratingId]" doc:name="Logger"/>
-        
-        <ee:transform doc:name="Prepare Update">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-    "filter": {
-        "_id": {
-            "$oid": vars.ratingId
-        }
-    },
-    "update": {
-        "$set": {
-            "rating": payload.rating,
-            "comment": payload.comment
-        }
-    }
-}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-        
-        <mongodb:update-documents config-ref="MongoDB_Config" 
-                                collectionName="ratings" 
-                                doc:name="Update Rating">
-            <mongodb:find-query>#[payload.filter]</mongodb:find-query>
-            <mongodb:content-to-update>#[payload.update]</mongodb:content-to-update>
-        </mongodb:update-documents>
-        
-        <mongodb:find-documents config-ref="MongoDB_Config" 
-                              collectionName="ratings" 
-                              doc:name="Find Updated Rating">
-            <mongodb:find-query><![CDATA[#[%dw 2.0
-output application/json
----
-{
-    "_id": {
-        "$oid": vars.ratingId
-    }
-}]]]></mongodb:find-query>
-        </mongodb:find-documents>
-        
-        <ee:transform doc:name="Transform Response">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-    id: payload[0].'_id' as String,
-    location_id: payload[0].location_id,
-    user_id: payload[0].user_id,
-    rating: payload[0].rating,
-    comment: payload[0].comment,
-    created_at: payload[0].created_at as String
-}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-    </flow>
-    
-    <!-- DELETE /ratings/{ratingId} - Delete rating -->
-    <flow name="delete:\ratings\(ratingId):system_api_database-config">
-        <ee:transform doc:name="Extract ratingId">
-            <ee:variables>
-                <ee:set-variable variableName="ratingId">attributes.uriParams.'ratingId'</ee:set-variable>
-            </ee:variables>
-        </ee:transform>
-        
-        <logger level="INFO" message="Deleting rating: #[vars.ratingId]" doc:name="Logger"/>
-        
-        <mongodb:remove-documents config-ref="MongoDB_Config" 
-                                collectionName="ratings" 
-                                doc:name="Delete Rating">
-            <mongodb:find-query><![CDATA[#[%dw 2.0
-output application/json
----
-{
-    "_id": {
-        "$oid": vars.ratingId
-    }
-}]]]></mongodb:find-query>
-        </mongodb:remove-documents>
-        
-        <ee:transform doc:name="Transform Response">
+    <!-- DELETE /ratings/{ratingId} -->
+    <flow name="delete:\ratings\(ratingId):apiConfig">
+        <ee:transform>
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
