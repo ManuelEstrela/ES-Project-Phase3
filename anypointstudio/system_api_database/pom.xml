@@ -29,15 +29,6 @@
 				<artifactId>mule-maven-plugin</artifactId>
 				<version>${mule.maven.plugin.version}</version>
 				<extensions>true</extensions>
-				<!-- THIS IS THE CRITICAL SECTION -->
-				<configuration>
-					<sharedLibraries>
-						<sharedLibrary>
-							<groupId>com.h2database</groupId>
-							<artifactId>h2</artifactId>
-						</sharedLibrary>
-					</sharedLibraries>
-				</configuration>
 			</plugin>
 		</plugins>
 	</build>
@@ -68,18 +59,13 @@
 			<version>1.11.3</version>
 			<classifier>mule-plugin</classifier>
 		</dependency>
+		<!-- MongoDB Connector -->
 		<dependency>
 			<groupId>org.mule.connectors</groupId>
-			<artifactId>mule-db-connector</artifactId>
-			<version>1.14.13</version>
+			<artifactId>mule-mongodb-connector</artifactId>
+			<version>6.4.0</version>
 			<classifier>mule-plugin</classifier>
 		</dependency>
-		<!-- H2 Database Dependency -->
-		<dependency>
-       		<groupId>com.h2database</groupId>
-       		<artifactId>h2</artifactId>
-       		<version>2.1.214</version>
-   		</dependency>
 	</dependencies>
 
 	<repositories>

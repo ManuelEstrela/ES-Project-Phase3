@@ -6,10 +6,8 @@ api:
 http:
   port: "8081"
 
-# Database Configuration
-db:
-  host: "db4free.net"
-  port: "3306"
-  database: "your_database_name"
-  username: "your_username"
-  password: "your_password"
+# MongoDB Configuration
+mongodb:
+  connection:
+    string: "mongodb+srv://azoresUncharted:Grupo2@azoresuncharted.x5ley8f.mongodb.net/azoresunchartedtest?appName=AzoresUncharted"
+  database: "azoresunchartedtest"
