@@ -9,26 +9,38 @@ http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/htt
 http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
 http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/mule/api-gateway/current/mule-api-gateway.xsd">
     
-    <!-- HTTP Listener Configuration - PORT 8084 -->
+    <!-- ✅ ADDED: Load Properties File -->
+    <configuration-properties file="properties.yaml"/>
+    
+    <!-- ✅ FIXED: Now uses property from yaml -->
     <http:listener-config name="process-api-httpListenerConfig">
-        <http:listener-connection host="0.0.0.0" port="8084" />
+        <http:listener-connection host="0.0.0.0" port="${http.port}" />
     </http:listener-config>
     
-    <!-- HTTP Request Configurations for System APIs -->
+    <!-- ✅ FIXED: CloudHub URLs with HTTPS and port 443 -->
     <http:request-config name="Database_API_Config">
-        <http:request-connection host="localhost" port="8083" />
+        <http:request-connection 
+            host="system-api-database-13pr64.5sc6y6-2.usa-e2.cloudhub.io" 
+            protocol="HTTPS" 
+            port="443" />
     </http:request-config>
-    
+
     <http:request-config name="OpenMeteo_API_Config">
-        <http:request-connection host="localhost" port="8081" />
+        <http:request-connection 
+            host="system-api-openmeteo-13pr64.5sc6y6-2.usa-e2.cloudhub.io" 
+            protocol="HTTPS" 
+            port="443" />
     </http:request-config>
-    
+
     <http:request-config name="Geoapify_API_Config">
-        <http:request-connection host="localhost" port="8082" />
+        <http:request-connection 
+            host="system-api-geoapify-13pr64.5sc6y6-1.usa-e2.cloudhub.io" 
+            protocol="HTTPS" 
+            port="443" />
     </http:request-config>
     
     <!-- Main Flow -->
-    <api-gateway:autodiscovery apiId="20617157" ignoreBasePath="true" doc:name="API Autodiscovery" doc:id="b8699fbe-9fca-46d1-ab98-179b4ac1a028" flowRef="process-api-main" />
+    <api-gateway:autodiscovery apiId="20617157" ignoreBasePath="true" doc:name="API Autodiscovery" doc:id="2c60c690-30b5-40b6-a227-c66175a939f8" flowRef="process-api-main" />
 	<flow name="process-api-main">
         <http:listener config-ref="process-api-httpListenerConfig" path="/api/*">
             <http:response statusCode="#[vars.httpStatus default 200]">
@@ -113,9 +125,16 @@ output application/json
         <logger level="INFO" message="Process API: Received locations data" />
     </flow>
     
-    <!-- GET /locations/{id} - Get location details with Geoapify data -->
+    <!-- ✅ FIXED: GET /locations/{id} - Get location details with Geoapify data -->
     <flow name="process-get-location-by-id">
-        <set-variable variableName="locationId" value="#[attributes.requestPath splitBy('/')[3]]" />
+        <ee:transform>
+            <ee:variables>
+                <ee:set-variable variableName="locationId"><![CDATA[%dw 2.0
+output application/java
+---
+(attributes.requestPath splitBy '/' )[3]]]></ee:set-variable>
+            </ee:variables>
+        </ee:transform>
         <logger level="INFO" message="Process API: Getting location #[vars.locationId]" />
         
         <!-- Get location from Database -->
@@ -162,9 +181,16 @@ vars.locationData ++ {
         </ee:transform>
     </flow>
     
-    <!-- GET /locations/{id}/weather - Get location with weather data -->
+    <!-- ✅ FIXED: GET /locations/{id}/weather - Get location with weather data -->
     <flow name="process-get-location-weather">
-        <set-variable variableName="locationId" value="#[attributes.requestPath splitBy('/')[3]]" />
+        <ee:transform>
+            <ee:variables>
+                <ee:set-variable variableName="locationId"><![CDATA[%dw 2.0
+output application/java
+---
+(attributes.requestPath splitBy '/' )[3]]]></ee:set-variable>
+            </ee:variables>
+        </ee:transform>
         <logger level="INFO" message="Process API: Getting weather for location #[vars.locationId]" />
         
         <!-- Get location from Database -->
@@ -234,9 +260,16 @@ attributes.queryParams]]]></http:query-params>
         </http:request>
     </flow>
     
-    <!-- GET /itineraries/{id} - Get itinerary by ID -->
+    <!-- ✅ FIXED: GET /itineraries/{id} - Get itinerary by ID -->
     <flow name="process-get-itinerary-by-id">
-        <set-variable variableName="itineraryId" value="#[attributes.requestPath splitBy('/')[3]]" />
+        <ee:transform>
+            <ee:variables>
+                <ee:set-variable variableName="itineraryId"><![CDATA[%dw 2.0
+output application/java
+---
+(attributes.requestPath splitBy '/' )[3]]]></ee:set-variable>
+            </ee:variables>
+        </ee:transform>
         <logger level="INFO" message="Process API: Getting itinerary #[vars.itineraryId]" />
         <http:request method="GET" config-ref="Database_API_Config" path="#['/api/itineraries/' ++ vars.itineraryId]">
             <http:response-validator>
@@ -293,9 +326,16 @@ attributes.queryParams]]]></http:query-params>
         </http:request>
     </flow>
     
-    <!-- DELETE /favorites/{id} - Remove favorite -->
+    <!-- ✅ FIXED: DELETE /favorites/{id} - Remove favorite -->
     <flow name="process-delete-favorite">
-        <set-variable variableName="favoriteId" value="#[attributes.requestPath splitBy('/')[3]]" />
+        <ee:transform>
+            <ee:variables>
+                <ee:set-variable variableName="favoriteId"><![CDATA[%dw 2.0
+output application/java
+---
+(attributes.requestPath splitBy '/' )[3]]]></ee:set-variable>
+            </ee:variables>
+        </ee:transform>
         <logger level="INFO" message="Process API: Deleting favorite #[vars.favoriteId]" />
         <http:request method="DELETE" config-ref="Database_API_Config" path="#['/api/favorites/' ++ vars.favoriteId]">
             <http:response-validator>

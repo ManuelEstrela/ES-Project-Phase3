@@ -12,9 +12,12 @@ http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/m
 http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd 
 http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/mule/api-gateway/current/mule-api-gateway.xsd">
     
-    <!-- HTTP Listener Config -->
+    <!-- ✅ ADDED: Load Properties File -->
+    <configuration-properties file="properties.yaml"/>
+    
+    <!-- ✅ FIXED: Now uses property from yaml -->
     <http:listener-config name="system_api_geoapify-httpListenerConfig">
-        <http:listener-connection host="0.0.0.0" port="8082" />
+        <http:listener-connection host="0.0.0.0" port="${http.port}" />
     </http:listener-config>
     
     <!-- HTTP Request Config for Geoapify API -->
@@ -28,7 +31,7 @@ http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/m
                    outboundHeadersMapName="outboundHeaders" 
                    httpStatusVarName="httpStatus" />
     
-    <!-- API Autodiscovery - COMMENTED OUT FOR LOCAL TESTING -->
+    <!-- API Autodiscovery -->
     <api-gateway:autodiscovery 
     apiId="20617159" 
     ignoreBasePath="true" 
@@ -158,7 +161,7 @@ output application/json
         </error-handler>
     </flow>
     
-    <!-- GET /places endpoint - REAL API CALL -->
+    <!-- ✅ FIXED: GET /places endpoint - REAL API CALL with CORRECT API KEY -->
     <flow name="get:\places:system_api_geoapify-config">
         <logger level="INFO" doc:name="Log Request" 
                 message="#['Fetching places with categories: ' ++ attributes.queryParams.categories ++ ', filter: ' ++ attributes.queryParams.filter]"/>
@@ -175,7 +178,7 @@ output application/json
     "filter": attributes.queryParams.filter,
     "limit": attributes.queryParams.limit default "20",
     "lang": attributes.queryParams.lang default "pt",
-    "apiKey": "YOUR_GEOAPIFY_API_KEY"
+    "apiKey": "6cf58d1146e2468eaa227f88bdd3d642"
 }]]]></http:query-params>
         </http:request>
         
@@ -193,7 +196,7 @@ payload]]></ee:set-payload>
         </ee:transform>
     </flow>
     
-    <!-- GET /places/{placeId} endpoint - REAL API CALL -->
+    <!-- ✅ FIXED: GET /places/{placeId} endpoint - REAL API CALL with CORRECT API KEY -->
     <flow name="get:\places\(placeId):system_api_geoapify-config">
         <ee:transform doc:name="Extract placeId">
             <ee:variables>
@@ -214,7 +217,7 @@ payload]]></ee:set-payload>
 {
     "id": vars.placeId,
     "lang": attributes.queryParams.lang default "pt",
-    "apiKey": "YOUR_GEOAPIFY_API_KEY"
+    "apiKey": "6cf58d1146e2468eaa227f88bdd3d642"
 }]]]></http:query-params>
         </http:request>
         
@@ -232,7 +235,7 @@ payload]]></ee:set-payload>
         </ee:transform>
     </flow>
     
-    <!-- GET /geocode/search endpoint - REAL API CALL -->
+    <!-- ✅ FIXED: GET /geocode/search endpoint - REAL API CALL with CORRECT API KEY -->
     <flow name="get:\geocode\search:system_api_geoapify-config">
         <logger level="INFO" doc:name="Log Request" 
                 message="#['Geocoding search for: ' ++ attributes.queryParams.text]"/>
@@ -248,7 +251,7 @@ payload]]></ee:set-payload>
     "text": attributes.queryParams.text,
     "limit": attributes.queryParams.limit default "5",
     "lang": attributes.queryParams.lang default "pt",
-    "apiKey": "YOUR_GEOAPIFY_API_KEY"
+    "apiKey": "6cf58d1146e2468eaa227f88bdd3d642"
 } ++ (if (!isEmpty(attributes.queryParams.filter)) {"filter": attributes.queryParams.filter} else {})]]]></http:query-params>
         </http:request>
         
@@ -266,7 +269,7 @@ payload]]></ee:set-payload>
         </ee:transform>
     </flow>
     
-    <!-- GET /geocode/reverse endpoint - REAL API CALL -->
+    <!-- ✅ FIXED: GET /geocode/reverse endpoint - REAL API CALL with CORRECT API KEY -->
     <flow name="get:\geocode\reverse:system_api_geoapify-config">
         <logger level="INFO" doc:name="Log Request" 
                 message="#['Reverse geocoding for lat: ' ++ attributes.queryParams.lat ++ ', lon: ' ++ attributes.queryParams.lon]"/>
@@ -282,7 +285,7 @@ payload]]></ee:set-payload>
     "lat": attributes.queryParams.lat,
     "lon": attributes.queryParams.lon,
     "lang": attributes.queryParams.lang default "pt",
-    "apiKey": "YOUR_GEOAPIFY_API_KEY"
+    "apiKey": "6cf58d1146e2468eaa227f88bdd3d642"
 }]]]></http:query-params>
         </http:request>
         
