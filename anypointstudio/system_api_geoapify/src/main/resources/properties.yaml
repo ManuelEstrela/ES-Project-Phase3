@@ -1,10 +1,13 @@
 # API Configuration
 api:
   id: "20617159"
+  client:
+    id: "849914e8df8e436da0afa48842e5426e"
+    secret: "Fc25503676274CdE9CA20feE0B2acB39"
 
 # HTTP Configuration
 http:
-  port: "8082" 
+  port: "8082"
 
 # Geoapify Configuration
 geoapify:

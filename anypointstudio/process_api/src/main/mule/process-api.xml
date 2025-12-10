@@ -11,16 +11,9 @@ http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/m
     
     <configuration-properties file="properties.yaml"/>
     
-    <http:listener-config name="experience-api-httpListenerConfig">
+    <http:listener-config name="process-api-httpListenerConfig">
         <http:listener-connection host="0.0.0.0" port="${http.port}" />
     </http:listener-config>
-    
-    <http:request-config name="Process_API_Config">
-        <http:request-connection 
-            host="processapi-turismometeo-13pr64.5sc6y6-1.usa-e2.cloudhub.io" 
-            protocol="HTTPS" 
-            port="443" />
-    </http:request-config>
     
     <http:request-config name="Database_API_Config">
         <http:request-connection 
@@ -28,10 +21,24 @@ http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/m
             protocol="HTTPS" 
             port="443" />
     </http:request-config>
+
+    <http:request-config name="OpenMeteo_API_Config">
+        <http:request-connection 
+            host="system-api-openmeteo-13pr64.5sc6y6-2.usa-e2.cloudhub.io" 
+            protocol="HTTPS" 
+            port="443" />
+    </http:request-config>
+
+    <http:request-config name="Geoapify_API_Config">
+        <http:request-connection 
+            host="system-api-geoapify-13pr64.5sc6y6-1.usa-e2.cloudhub.io" 
+            protocol="HTTPS" 
+            port="443" />
+    </http:request-config>
     
-    <api-gateway:autodiscovery apiId="${api.id}" ignoreBasePath="true" doc:name="API Autodiscovery" flowRef="experience-api-main" />
-	<flow name="experience-api-main">
-        <http:listener config-ref="experience-api-httpListenerConfig" path="/api/*">
+    <api-gateway:autodiscovery apiId="${api.id}" ignoreBasePath="true" doc:name="API Autodiscovery" flowRef="process-api-main" />
+	<flow name="process-api-main">
+        <http:listener config-ref="process-api-httpListenerConfig" path="/api/*">
             <http:response statusCode="#[vars.httpStatus default 200]">
                 <http:headers>#[vars.outboundHeaders default {}]</http:headers>
             </http:response>
@@ -42,56 +49,38 @@ http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/m
         </http:listener>
         
         <choice doc:name="Route Request">
-            <when expression="#[attributes.method == 'POST' and attributes.requestPath == '/api/users']">
-                <flow-ref name="experience-register-user" />
-            </when>
-            <when expression="#[attributes.method == 'POST' and attributes.requestPath == '/api/users/login']">
-                <flow-ref name="experience-login-user" />
-            </when>
-            <when expression="#[attributes.method == 'GET' and attributes.requestPath == '/api/islands']">
-                <flow-ref name="experience-get-islands" />
-            </when>
             <when expression="#[attributes.method == 'GET' and attributes.requestPath == '/api/locations']">
-                <flow-ref name="experience-get-locations" />
+                <flow-ref name="process-get-locations" />
             </when>
-            <when expression="#[attributes.method == 'GET' and attributes.requestPath matches /\/api\/locations\/\d+$/]">
-                <flow-ref name="experience-get-location-by-id" />
+            <when expression="#[attributes.method == 'GET' and attributes.requestPath matches /\/api\/locations\/\d+/]">
+                <flow-ref name="process-get-location-by-id" />
             </when>
             <when expression="#[attributes.method == 'GET' and attributes.requestPath matches /\/api\/locations\/\d+\/weather/]">
-                <flow-ref name="experience-get-location-weather" />
+                <flow-ref name="process-get-location-weather" />
             </when>
             <when expression="#[attributes.method == 'GET' and attributes.requestPath == '/api/itineraries']">
-                <flow-ref name="experience-get-itineraries" />
+                <flow-ref name="process-get-itineraries" />
             </when>
             <when expression="#[attributes.method == 'POST' and attributes.requestPath == '/api/itineraries']">
-                <flow-ref name="experience-post-itinerary" />
+                <flow-ref name="process-post-itinerary" />
             </when>
             <when expression="#[attributes.method == 'GET' and attributes.requestPath matches /\/api\/itineraries\/\d+/]">
-                <flow-ref name="experience-get-itinerary-by-id" />
+                <flow-ref name="process-get-itinerary-by-id" />
             </when>
             <when expression="#[attributes.method == 'GET' and attributes.requestPath == '/api/ratings']">
-                <flow-ref name="experience-get-ratings" />
+                <flow-ref name="process-get-ratings" />
             </when>
             <when expression="#[attributes.method == 'POST' and attributes.requestPath == '/api/ratings']">
-                <flow-ref name="experience-post-rating" />
+                <flow-ref name="process-post-rating" />
             </when>
             <when expression="#[attributes.method == 'GET' and attributes.requestPath == '/api/favorites']">
-                <flow-ref name="experience-get-favorites" />
+                <flow-ref name="process-get-favorites" />
             </when>
             <when expression="#[attributes.method == 'POST' and attributes.requestPath == '/api/favorites']">
-                <flow-ref name="experience-post-favorite" />
+                <flow-ref name="process-post-favorite" />
             </when>
             <when expression="#[attributes.method == 'DELETE' and attributes.requestPath matches /\/api\/favorites\/\d+/]">
-                <flow-ref name="experience-delete-favorite" />
-            </when>
-            <when expression="#[attributes.method == 'GET' and attributes.requestPath == '/api/admin/locations']">
-                <flow-ref name="experience-get-locations" />
-            </when>
-            <when expression="#[attributes.method == 'GET' and attributes.requestPath == '/api/admin/users']">
-                <flow-ref name="experience-get-users" />
-            </when>
-            <when expression="#[attributes.method == 'GET' and attributes.requestPath == '/api/admin/integrations']">
-                <flow-ref name="experience-get-integrations" />
+                <flow-ref name="process-delete-favorite" />
             </when>
             <otherwise>
                 <ee:transform>
@@ -109,9 +98,9 @@ output application/json
         </choice>
     </flow>
     
-    <flow name="experience-register-user">
-        <http:request method="POST" config-ref="Database_API_Config" path="/api/users">
-            <http:body><![CDATA[#[payload]]]></http:body>
+    <flow name="process-get-locations">
+        <logger level="INFO" message="Process API: Getting all locations" />
+        <http:request method="GET" config-ref="Database_API_Config" path="/api/locations">
             <http:headers><![CDATA[#[output application/java
 ---
 {
@@ -122,24 +111,18 @@ output application/json
                 <http:success-status-code-validator values="200..299" />
             </http:response-validator>
         </http:request>
-        <ee:transform>
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-    id: payload.id,
-    email: payload.email,
-    name: payload.name,
-    token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.demo.token"
-}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
     </flow>
     
-    <flow name="experience-login-user">
-        <http:request method="POST" config-ref="Database_API_Config" path="/api/users/login">
-            <http:body><![CDATA[#[payload]]]></http:body>
+    <flow name="process-get-location-by-id">
+        <ee:transform>
+            <ee:variables>
+                <ee:set-variable variableName="locationId"><![CDATA[%dw 2.0
+output application/java
+---
+(attributes.requestPath splitBy '/' )[3]]]></ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <http:request method="GET" config-ref="Database_API_Config" path="#['/api/locations/' ++ vars.locationId]">
             <http:headers><![CDATA[#[output application/java
 ---
 {
@@ -150,44 +133,109 @@ output application/json
                 <http:success-status-code-validator values="200..299" />
             </http:response-validator>
         </http:request>
+        <set-variable variableName="locationData" value="#[payload]" />
+        
+        <try>
+            <http:request method="GET" config-ref="Geoapify_API_Config" path="/api/places/nearby">
+                <http:query-params><![CDATA[#[output application/java
+---
+{
+    "latitude": vars.locationData.latitude,
+    "longitude": vars.locationData.longitude,
+    "radius": "1000"
+}]]]></http:query-params>
+                <http:headers><![CDATA[#[output application/java
+---
+{
+    "client_id": "${api.client.id}",
+    "client_secret": "${api.client.secret}"
+}]]]></http:headers>
+                <http:response-validator>
+                    <http:success-status-code-validator values="200..299" />
+                </http:response-validator>
+            </http:request>
+            <set-variable variableName="geoData" value="#[payload]" />
+            <error-handler>
+                <on-error-continue type="ANY">
+                    <set-variable variableName="geoData" value="#[null]" />
+                </on-error-continue>
+            </error-handler>
+        </try>
+        
         <ee:transform>
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
-{
-    id: payload.id,
-    email: payload.email,
-    name: payload.name,
-    token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.demo.token"
+vars.locationData ++ {
+    nearbyPlaces: vars.geoData.features default []
 }]]></ee:set-payload>
             </ee:message>
         </ee:transform>
     </flow>
     
-    <flow name="experience-get-islands">
+    <flow name="process-get-location-weather">
+        <ee:transform>
+            <ee:variables>
+                <ee:set-variable variableName="locationId"><![CDATA[%dw 2.0
+output application/java
+---
+(attributes.requestPath splitBy '/' )[3]]]></ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <http:request method="GET" config-ref="Database_API_Config" path="#['/api/locations/' ++ vars.locationId]">
+            <http:headers><![CDATA[#[output application/java
+---
+{
+    "client_id": "${api.client.id}",
+    "client_secret": "${api.client.secret}"
+}]]]></http:headers>
+            <http:response-validator>
+                <http:success-status-code-validator values="200..299" />
+            </http:response-validator>
+        </http:request>
+        <set-variable variableName="locationData" value="#[payload]" />
+        
+        <try>
+            <http:request method="GET" config-ref="OpenMeteo_API_Config" path="/api/weather/current">
+                <http:query-params><![CDATA[#[output application/java
+---
+{
+    "latitude": vars.locationData.latitude as String,
+    "longitude": vars.locationData.longitude as String
+}]]]></http:query-params>
+                <http:headers><![CDATA[#[output application/java
+---
+{
+    "client_id": "${api.client.id}",
+    "client_secret": "${api.client.secret}"
+}]]]></http:headers>
+                <http:response-validator>
+                    <http:success-status-code-validator values="200..299" />
+                </http:response-validator>
+            </http:request>
+            <set-variable variableName="weatherData" value="#[payload]" />
+            <error-handler>
+                <on-error-continue type="ANY">
+                    <set-variable variableName="weatherData" value="#[{error: 'Weather data unavailable'}]" />
+                </on-error-continue>
+            </error-handler>
+        </try>
+        
         <ee:transform>
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
-[
-    {id: 1, name: "São Miguel", description: "The largest island in the Azores", imageUrl: "/assets/images/islands/sao-miguel.jpg", locationCount: 15},
-    {id: 2, name: "Terceira", description: "UNESCO World Heritage site", imageUrl: "/assets/images/islands/terceira.jpg", locationCount: 10},
-    {id: 3, name: "Faial", description: "Known as the Blue Island", imageUrl: "/assets/images/islands/faial.jpg", locationCount: 8},
-    {id: 4, name: "Pico", description: "Home to Portugal's highest mountain", imageUrl: "/assets/images/islands/pico.jpg", locationCount: 7},
-    {id: 5, name: "São Jorge", description: "Famous for its dramatic cliffs", imageUrl: "/assets/images/islands/sao-jorge.jpg", locationCount: 6},
-    {id: 6, name: "Santa Maria", description: "The oldest island", imageUrl: "/assets/images/islands/santa-maria.jpg", locationCount: 5},
-    {id: 7, name: "Graciosa", description: "The White Island", imageUrl: "/assets/images/islands/graciosa.jpg", locationCount: 4},
-    {id: 8, name: "Flores", description: "The westernmost island", imageUrl: "/assets/images/islands/flores.jpg", locationCount: 5},
-    {id: 9, name: "Corvo", description: "The smallest island", imageUrl: "/assets/images/islands/corvo.jpg", locationCount: 2}
-]]]></ee:set-payload>
+vars.locationData ++ {
+    weather: vars.weatherData
+}]]></ee:set-payload>
             </ee:message>
         </ee:transform>
     </flow>
     
-    <flow name="experience-get-locations">
-        <http:request method="GET" config-ref="Process_API_Config" path="/api/locations">
+    <flow name="process-get-itineraries">
+        <http:request method="GET" config-ref="Database_API_Config" path="/api/itineraries">
             <http:query-params><![CDATA[#[output application/java
 ---
 attributes.queryParams]]]></http:query-params>
@@ -203,69 +251,8 @@ attributes.queryParams]]]></http:query-params>
         </http:request>
     </flow>
     
-    <flow name="experience-get-location-by-id">
-        <ee:transform>
-            <ee:variables>
-                <ee:set-variable variableName="locationId"><![CDATA[%dw 2.0
-output application/java
----
-(attributes.requestPath splitBy '/' )[3]]]></ee:set-variable>
-            </ee:variables>
-        </ee:transform>
-        <http:request method="GET" config-ref="Process_API_Config" path="#['/api/locations/' ++ vars.locationId]">
-            <http:headers><![CDATA[#[output application/java
----
-{
-    "client_id": "${api.client.id}",
-    "client_secret": "${api.client.secret}"
-}]]]></http:headers>
-            <http:response-validator>
-                <http:success-status-code-validator values="200..299" />
-            </http:response-validator>
-        </http:request>
-    </flow>
-    
-    <flow name="experience-get-location-weather">
-        <ee:transform>
-            <ee:variables>
-                <ee:set-variable variableName="locationId"><![CDATA[%dw 2.0
-output application/java
----
-(attributes.requestPath splitBy '/' )[3]]]></ee:set-variable>
-            </ee:variables>
-        </ee:transform>
-        <http:request method="GET" config-ref="Process_API_Config" path="#['/api/locations/' ++ vars.locationId ++ '/weather']">
-            <http:headers><![CDATA[#[output application/java
----
-{
-    "client_id": "${api.client.id}",
-    "client_secret": "${api.client.secret}"
-}]]]></http:headers>
-            <http:response-validator>
-                <http:success-status-code-validator values="200..299" />
-            </http:response-validator>
-        </http:request>
-    </flow>
-    
-    <flow name="experience-get-itineraries">
-        <http:request method="GET" config-ref="Process_API_Config" path="/api/itineraries">
-            <http:query-params><![CDATA[#[output application/java
----
-attributes.queryParams]]]></http:query-params>
-            <http:headers><![CDATA[#[output application/java
----
-{
-    "client_id": "${api.client.id}",
-    "client_secret": "${api.client.secret}"
-}]]]></http:headers>
-            <http:response-validator>
-                <http:success-status-code-validator values="200..299" />
-            </http:response-validator>
-        </http:request>
-    </flow>
-    
-    <flow name="experience-post-itinerary">
-        <http:request method="POST" config-ref="Process_API_Config" path="/api/itineraries">
+    <flow name="process-post-itinerary">
+        <http:request method="POST" config-ref="Database_API_Config" path="/api/itineraries">
             <http:body><![CDATA[#[payload]]]></http:body>
             <http:headers><![CDATA[#[output application/java
 ---
@@ -279,7 +266,7 @@ attributes.queryParams]]]></http:query-params>
         </http:request>
     </flow>
     
-    <flow name="experience-get-itinerary-by-id">
+    <flow name="process-get-itinerary-by-id">
         <ee:transform>
             <ee:variables>
                 <ee:set-variable variableName="itineraryId"><![CDATA[%dw 2.0
@@ -288,7 +275,7 @@ output application/java
 (attributes.requestPath splitBy '/' )[3]]]></ee:set-variable>
             </ee:variables>
         </ee:transform>
-        <http:request method="GET" config-ref="Process_API_Config" path="#['/api/itineraries/' ++ vars.itineraryId]">
+        <http:request method="GET" config-ref="Database_API_Config" path="#['/api/itineraries/' ++ vars.itineraryId]">
             <http:headers><![CDATA[#[output application/java
 ---
 {
@@ -301,8 +288,8 @@ output application/java
         </http:request>
     </flow>
     
-    <flow name="experience-get-ratings">
-        <http:request method="GET" config-ref="Process_API_Config" path="/api/ratings">
+    <flow name="process-get-ratings">
+        <http:request method="GET" config-ref="Database_API_Config" path="/api/ratings">
             <http:query-params><![CDATA[#[output application/java
 ---
 attributes.queryParams]]]></http:query-params>
@@ -318,8 +305,8 @@ attributes.queryParams]]]></http:query-params>
         </http:request>
     </flow>
     
-    <flow name="experience-post-rating">
-        <http:request method="POST" config-ref="Process_API_Config" path="/api/ratings">
+    <flow name="process-post-rating">
+        <http:request method="POST" config-ref="Database_API_Config" path="/api/ratings">
             <http:body><![CDATA[#[payload]]]></http:body>
             <http:headers><![CDATA[#[output application/java
 ---
@@ -333,8 +320,8 @@ attributes.queryParams]]]></http:query-params>
         </http:request>
     </flow>
     
-    <flow name="experience-get-favorites">
-        <http:request method="GET" config-ref="Process_API_Config" path="/api/favorites">
+    <flow name="process-get-favorites">
+        <http:request method="GET" config-ref="Database_API_Config" path="/api/favorites">
             <http:query-params><![CDATA[#[output application/java
 ---
 attributes.queryParams]]]></http:query-params>
@@ -350,8 +337,8 @@ attributes.queryParams]]]></http:query-params>
         </http:request>
     </flow>
     
-    <flow name="experience-post-favorite">
-        <http:request method="POST" config-ref="Process_API_Config" path="/api/favorites">
+    <flow name="process-post-favorite">
+        <http:request method="POST" config-ref="Database_API_Config" path="/api/favorites">
             <http:body><![CDATA[#[payload]]]></http:body>
             <http:headers><![CDATA[#[output application/java
 ---
@@ -365,7 +352,7 @@ attributes.queryParams]]]></http:query-params>
         </http:request>
     </flow>
     
-    <flow name="experience-delete-favorite">
+    <flow name="process-delete-favorite">
         <ee:transform>
             <ee:variables>
                 <ee:set-variable variableName="favoriteId"><![CDATA[%dw 2.0
@@ -374,7 +361,7 @@ output application/java
 (attributes.requestPath splitBy '/' )[3]]]></ee:set-variable>
             </ee:variables>
         </ee:transform>
-        <http:request method="DELETE" config-ref="Process_API_Config" path="#['/api/favorites/' ++ vars.favoriteId]">
+        <http:request method="DELETE" config-ref="Database_API_Config" path="#['/api/favorites/' ++ vars.favoriteId]">
             <http:headers><![CDATA[#[output application/java
 ---
 {
@@ -385,36 +372,6 @@ output application/java
                 <http:success-status-code-validator values="200..299" />
             </http:response-validator>
         </http:request>
-    </flow>
-    
-    <flow name="experience-get-users">
-        <http:request method="GET" config-ref="Database_API_Config" path="/api/users">
-            <http:headers><![CDATA[#[output application/java
----
-{
-    "client_id": "${api.client.id}",
-    "client_secret": "${api.client.secret}"
-}]]]></http:headers>
-            <http:response-validator>
-                <http:success-status-code-validator values="200..299" />
-            </http:response-validator>
-        </http:request>
-    </flow>
-    
-    <flow name="experience-get-integrations">
-        <ee:transform>
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-    database: {status: "connected", url: "system-api-database-13pr64.5sc6y6-2.usa-e2.cloudhub.io", lastChecked: now() as String},
-    openMeteo: {status: "connected", url: "system-api-openmeteo-13pr64.5sc6y6-2.usa-e2.cloudhub.io", lastChecked: now() as String},
-    geoapify: {status: "connected", url: "system-api-geoapify-13pr64.5sc6y6-1.usa-e2.cloudhub.io", lastChecked: now() as String},
-    processApi: {status: "connected", url: "processapi-turismometeo-13pr64.5sc6y6-1.usa-e2.cloudhub.io", lastChecked: now() as String}
-}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
     </flow>
     
 </mule>
