@@ -134,24 +134,35 @@ output application/json
 </error-handler>
 </flow>
 <flow name="delete:\favorites\(favoriteId):system_api_database-config">
-<db:delete doc:name="Delete" doc:id="aa152e62-1c31-4cce-92ba-fd3a0a7f25b7" config-ref="Database_Config">
-			<db:sql ><![CDATA[DELETE FROM favorites
+<set-variable value="#[attributes.uriParams.favoriteId]" doc:name="Set Variable" doc:id="233a2f71-7a55-4d5f-aebb-53a5115754c0" variableName="favoriteId"/>
+		<db:delete doc:name="Delete Favorite" config-ref="Database_Config">
+    <db:sql><![CDATA[DELETE FROM favorites
 WHERE id = :favoriteId;
-]]></db:sql>
-			<db:input-parameters ><![CDATA[#[{ favoriteId: attributes.uriParams.favoriteId }]]]></db:input-parameters>
-		</db:delete>
-		<ee:transform doc:name="Transform Message">
-<ee:variables>
-<ee:set-variable variableName="favoriteId"><![CDATA[%dw 2.0
+    ]]></db:sql>
+    <db:input-parameters><![CDATA[#[{ favoriteId: vars.favoriteId }]]]></db:input-parameters>
+</db:delete>
+
+<ee:transform doc:name="Transform Message">
+    <ee:message>
+    
+        <ee:set-payload><![CDATA[%dw 2.0
 output application/json
-var deleted = (payload as Number) default 0
+var deleted = payload as Number default 0
 ---
 if (deleted > 0)
-  { message: "Favorite deleted", favoriteId: attributes.uriParams.favoriteId }
+  null
 else
-  { error: "Favorite not found", favoriteId: attributes.uriParams.favoriteId }
+  { error: "Favorite not found", favoriteId: vars.favoriteId }
+]]></ee:set-payload>
+    </ee:message>
+    <ee:variables>
+        <ee:set-variable variableName="httpStatus"><![CDATA[%dw 2.0
+output application/java
+var deleted = payload as Number default 0
+---
+if (deleted > 0) 204 else 404
 ]]></ee:set-variable>
-</ee:variables>
+    </ee:variables>
 </ee:transform>
 </flow>
 <flow name="delete:\itineraries\(itineraryId):system_api_database-config">
