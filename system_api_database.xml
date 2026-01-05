@@ -257,29 +257,42 @@ else
 <flow name="patch:\ratings\(ratingId):application\json:system_api_database-config">
 <ee:transform doc:name="Transform Message">
 <ee:variables>
-<ee:set-variable variableName="ratingId">attributes.uriParams.'ratingId'</ee:set-variable>
+<ee:set-variable variableName="ratingId"><![CDATA[attributes.uriParams.ratingId]]></ee:set-variable>
 </ee:variables>
 </ee:transform>
-<ee:transform doc:name="Transform Message">
+<db:update doc:name="Update" doc:id="4a8f428d-a2a2-426b-a635-ca434d54259a" config-ref="Database_Config">
+			<db:sql ><![CDATA[UPDATE ratings 
+SET rating = COALESCE(:rating, rating),
+          comment = COALESCE(:comment, comment)
+WHERE id = :ratingId]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+rating: payload.rating default null,
+comment: payload.comment default null,
+ratingId: vars.ratingId as Number
+}]]]></db:input-parameters>
+		</db:update>
+		<db:select doc:name="Select" doc:id="94752115-c248-440e-a7b9-5daadb57cdc4" config-ref="Database_Config">
+			<db:sql ><![CDATA[SELECT id, locationid, userid, rating, comment, created_at
+FROM ratings 
+WHERE id = :ratingId]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{ ratingId: vars.ratingId }]]]></db:input-parameters>
+		</db:select>
+		<ee:transform doc:name="Transform Message">
 <ee:message>
 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
-{
-id: 1001,
-location_id: 1,
-user_id: 42,
-rating: 5,
-comment: "Lugar incrível!",
-created_at: "2025-11-10T15:00:00Z"
-} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
+if (isEmpty(payload))
+  { error: "Rating not found", ratingId: vars.ratingId }
+else 
+  payload[0]]]></ee:set-payload>
 </ee:message>
 </ee:transform>
 </flow>
 <flow name="patch:\users\(userId):application\json:system_api_database-config">
 		<ee:transform doc:name="Transform Message">
 <ee:variables>
-<ee:set-variable variableName="userId">attributes.uriParams.'userId'</ee:set-variable>
+<ee:set-variable variableName="userId"><![CDATA[attributes.uriParams.userId]]></ee:set-variable>
 </ee:variables>
 </ee:transform>
 		<db:update doc:name="Update" doc:id="49ae70ae-6ba8-4e48-94f9-91fdaa5f3647" config-ref="Database_Config">
@@ -292,16 +305,30 @@ SET
   updated_at = NOW()
 WHERE id = :userId;
 ]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+name: payload.name default null,
+email: payload.email default null,
+password: payload.password default null,
+role: payload.role default null,
+userId: vars.userId as Number
+}]]]></db:input-parameters>
 		</db:update>
 		<db:select doc:name="Select" doc:id="27123182-9074-4bd7-87ca-5d7685d5ddc2" config-ref="Database_Config">
 			<db:sql ><![CDATA[SELECT id, name, email, role, created_at, updated_at
 FROM users
 WHERE id = :userId;
 ]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{ userId: vars.userId}]]]></db:input-parameters>
 		</db:select>
 		<ee:transform doc:name="Transform Message">
 <ee:message>
-<ee:set-payload><![CDATA[payload[0]]]></ee:set-payload>
+<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+if (isEmpty(payload))
+  { error: "User not found", ratingId: vars.userId }
+else 
+  payload[0]]]></ee:set-payload>
 </ee:message>
 </ee:transform>
 </flow>
@@ -416,7 +443,7 @@ WHERE id = :itineraryId;
 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
-if (payload == null or sizeOf(payload) == 0)
+if (isEmpty(payload))
   { error: "Itinerary not found", itineraryId: attributes.uriParams.itineraryId }
 else
   payload[0]
