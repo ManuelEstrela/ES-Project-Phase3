@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
-http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+<mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
 <http:listener-config name="system_api_database-httpListenerConfig">
 <http:listener-connection host="0.0.0.0" port="8082" />
 </http:listener-config>
@@ -134,35 +135,24 @@ output application/json
 </error-handler>
 </flow>
 <flow name="delete:\favorites\(favoriteId):system_api_database-config">
-<set-variable value="#[attributes.uriParams.favoriteId]" doc:name="Set Variable" doc:id="233a2f71-7a55-4d5f-aebb-53a5115754c0" variableName="favoriteId"/>
-		<db:delete doc:name="Delete Favorite" config-ref="Database_Config">
-    <db:sql><![CDATA[DELETE FROM favorites
+<db:delete doc:name="Delete" doc:id="aa152e62-1c31-4cce-92ba-fd3a0a7f25b7" config-ref="Database_Config">
+			<db:sql ><![CDATA[DELETE FROM favorites
 WHERE id = :favoriteId;
-    ]]></db:sql>
-    <db:input-parameters><![CDATA[#[{ favoriteId: vars.favoriteId }]]]></db:input-parameters>
-</db:delete>
-
-<ee:transform doc:name="Transform Message">
-    <ee:message>
-    
-        <ee:set-payload><![CDATA[%dw 2.0
+]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{ favoriteId: attributes.uriParams.favoriteId as Number }]]]></db:input-parameters>
+		</db:delete>
+		<ee:transform doc:name="Transform Message">
+<ee:variables>
+<ee:set-variable variableName="favoriteId"><![CDATA[%dw 2.0
 output application/json
 var deleted = payload as Number default 0
 ---
 if (deleted > 0)
   null
 else
-  { error: "Favorite not found", favoriteId: vars.favoriteId }
-]]></ee:set-payload>
-    </ee:message>
-    <ee:variables>
-        <ee:set-variable variableName="httpStatus"><![CDATA[%dw 2.0
-output application/java
-var deleted = payload as Number default 0
----
-if (deleted > 0) 204 else 404
+  { error: "Favorite not found", favoriteId: attributes.uriParams.favoriteId }
 ]]></ee:set-variable>
-    </ee:variables>
+</ee:variables>
 </ee:transform>
 </flow>
 <flow name="delete:\itineraries\(itineraryId):system_api_database-config">
@@ -486,7 +476,7 @@ payload]]></ee:set-payload>
 </ee:transform>
 </flow>
 <flow name="post:\favorites:application\json:system_api_database-config">
-<ee:transform doc:name="Transform Message">
+		<ee:transform doc:name="Transform Message">
 <ee:message>
 <ee:set-payload><![CDATA[%dw 2.0
 output application/java
@@ -498,20 +488,20 @@ output application/java
 ]]></ee:set-payload>
 </ee:message>
 </ee:transform>
-		<set-variable value="#[payload]" doc:name="Set Variable" doc:id="e7accc11-7891-4944-bb18-b9c06b4680ff" variableName="favoriteRequest"/>
+		<set-variable value="#[payload]" doc:name="Set Variable" doc:id="e7accc11-7891-4944-bb18-b9c06b4680ff" variableName="favoriteRequest" />
 		<db:select doc:name="user exists" doc:id="318dee19-f3c1-4288-98e0-41fd92ca6e5d" config-ref="Database_Config">
-			<db:sql ><![CDATA[SELECT 1
+			<db:sql><![CDATA[SELECT 1
 FROM favorites
 WHERE userid = :userid
   AND locationid = :locationid;]]></db:sql>
-			<db:input-parameters ><![CDATA[#[payload]]]></db:input-parameters>
+			<db:input-parameters><![CDATA[#[payload]]]></db:input-parameters>
 		</db:select>
-		<choice doc:name="Choice" doc:id="cae0b273-dd57-422e-b82d-26c9542ba0c2" >
+		<choice doc:name="Choice" doc:id="cae0b273-dd57-422e-b82d-26c9542ba0c2">
 			<when expression="#[!isEmpty(payload)]">
-				<set-variable value="409" doc:name="Set Variable" doc:id="737379f9-dc2c-42d5-bb89-b91ba66e8ecf" variableName="httpStatus"/>
-				<ee:transform doc:name="Transform Message" doc:id="172b234b-1e71-453e-9372-c3d37e462168" >
-					<ee:message >
-						<ee:set-payload ><![CDATA[%dw 2.0
+				<set-variable value="409" doc:name="Set Variable" doc:id="737379f9-dc2c-42d5-bb89-b91ba66e8ecf" variableName="httpStatus" />
+				<ee:transform doc:name="Transform Message" doc:id="172b234b-1e71-453e-9372-c3d37e462168">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
 {
@@ -522,7 +512,7 @@ output application/json
 					</ee:message>
 				</ee:transform>
 			</when>
-			<otherwise >
+			<otherwise>
 				<db:insert doc:name="Insert" doc:id="c8f89b7a-a58f-4a58-8960-44bbd3248706" config-ref="Database_Config">
 			<db:sql><![CDATA[INSERT INTO favorites (userid, locationid)
 VALUES (:userid, :locationid);
@@ -546,18 +536,84 @@ output application/json
 		</choice>
 </flow>
 <flow name="post:\images:application\json:system_api_database-config">
-<ee:transform doc:name="Transform Message">
-<ee:message>
-<ee:set-payload><![CDATA[%dw 2.0
-output application/json
+  <ee:transform doc:name="Transform to DB Params">
+    <ee:message>
+      <ee:set-payload><![CDATA[%dw 2.0
+output application/java
 ---
 {
-error: "Bad Request",
-message: "Missing or invalid parameter"
-} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
-</ee:message>
-</ee:transform>
+  locationId: payload.locationId as Number,
+  imageUrl: payload.imageUrl
+}]]></ee:set-payload>
+    </ee:message>
+  </ee:transform>
+  <set-variable value="#[payload]" variableName="imageRequest" />
+  <db:select doc:name="Check Location Exists" config-ref="Database_Config">
+    <db:sql><![CDATA[SELECT 1 FROM locations WHERE id = :locationId]]></db:sql>
+    <db:input-parameters><![CDATA[#[{ locationId: vars.imageRequest.locationId }]]]></db:input-parameters>
+  </db:select>
+  <choice doc:name="Validate Location">
+    <when expression="#[isEmpty(payload)]">
+      <ee:transform>
+        <ee:message>
+          <ee:set-payload><![CDATA[%dw 2.0 output application/json --- { error: "Location not found", locationId: vars.imageRequest.locationId }]]></ee:set-payload>
+        </ee:message>
+        <ee:variables>
+          <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+        </ee:variables>
+      </ee:transform>
+    </when>
+    <otherwise>
+      <ee:transform doc:name="Check URL Format">
+		  <ee:message>
+		    <ee:set-payload><![CDATA[%dw 2.0
+		output application/java
+		---
+		vars.imageRequest]]></ee:set-payload>
+		  </ee:message>
+		  <ee:variables>
+		    <ee:set-variable variableName="urlValid"><![CDATA[%dw 2.0
+		output application/java
+		---
+		{
+		  isHttps: sizeOf(splitBy(vars.imageRequest.imageUrl, "https://")) > 1,
+		  isJpg: endsWith(vars.imageRequest.imageUrl, ".jpg") or endsWith(vars.imageRequest.imageUrl, ".jpeg")
+		}]]></ee:set-variable>
+		  </ee:variables>
+	   </ee:transform>
+      <choice doc:name="Validate URL">
+        <when expression="#[vars.urlValid.isHttps != true or vars.urlValid.isJpg != true]">
+          <ee:transform>
+            <ee:message>
+              <ee:set-payload><![CDATA[%dw 2.0 output application/json --- { error: "Invalid image URL", mustBe: "https://...jpg or https://...jpeg" }]]></ee:set-payload>
+            </ee:message>
+            <ee:variables>
+              <ee:set-variable variableName="httpStatus">400</ee:set-variable>
+            </ee:variables>
+          </ee:transform>
+        </when>
+        <otherwise>
+          <db:insert doc:name="Insert Image" config-ref="Database_Config">
+            <db:sql><![CDATA[INSERT INTO images (location_id, image_url) VALUES (:locationId, :imageUrl);]]></db:sql>
+            <db:input-parameters><![CDATA[#[vars.imageRequest]]]></db:input-parameters>
+          </db:insert>
+          <ee:transform doc:name="Success">
+            <ee:message>
+              <ee:set-payload><![CDATA[%dw 2.0 output application/json --- { message: "Image created", locationId: vars.imageRequest.locationId, imageUrl: vars.imageRequest.imageUrl }]]></ee:set-payload>
+            </ee:message>
+            <ee:variables>
+              <ee:set-variable variableName="httpStatus">201</ee:set-variable>
+            </ee:variables>
+          </ee:transform>
+        </otherwise>
+      </choice>
+    </otherwise>
+  </choice>
 </flow>
+
+
+
+
 <flow name="post:\itineraries:application\json:system_api_database-config">
 <ee:transform doc:name="Transform Message">
 <ee:message>
