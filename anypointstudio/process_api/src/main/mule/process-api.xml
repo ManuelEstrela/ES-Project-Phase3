@@ -101,15 +101,15 @@ output application/json
     <flow name="process-get-locations">
         <logger level="INFO" message="Process API: Getting all locations" />
         <http:request method="GET" config-ref="Database_API_Config" path="/api/locations">
+            <http:response-validator>
+                <http:success-status-code-validator values="200..299" />
+            </http:response-validator>
             <http:headers><![CDATA[#[output application/java
 ---
 {
     "client_id": "${api.client.id}",
     "client_secret": "${api.client.secret}"
 }]]]></http:headers>
-            <http:response-validator>
-                <http:success-status-code-validator values="200..299" />
-            </http:response-validator>
         </http:request>
     </flow>
     
@@ -123,15 +123,15 @@ output application/java
             </ee:variables>
         </ee:transform>
         <http:request method="GET" config-ref="Database_API_Config" path="#['/api/locations/' ++ vars.locationId]">
+            <http:response-validator>
+                <http:success-status-code-validator values="200..299" />
+            </http:response-validator>
             <http:headers><![CDATA[#[output application/java
 ---
 {
     "client_id": "${api.client.id}",
     "client_secret": "${api.client.secret}"
 }]]]></http:headers>
-            <http:response-validator>
-                <http:success-status-code-validator values="200..299" />
-            </http:response-validator>
         </http:request>
         <set-variable variableName="locationData" value="#[payload]" />
         
@@ -144,15 +144,15 @@ output application/java
     "longitude": vars.locationData.longitude,
     "radius": "1000"
 }]]]></http:query-params>
+                <http:response-validator>
+                    <http:success-status-code-validator values="200..299" />
+                </http:response-validator>
                 <http:headers><![CDATA[#[output application/java
 ---
 {
     "client_id": "${api.client.id}",
     "client_secret": "${api.client.secret}"
 }]]]></http:headers>
-                <http:response-validator>
-                    <http:success-status-code-validator values="200..299" />
-                </http:response-validator>
             </http:request>
             <set-variable variableName="geoData" value="#[payload]" />
             <error-handler>
@@ -184,15 +184,15 @@ output application/java
             </ee:variables>
         </ee:transform>
         <http:request method="GET" config-ref="Database_API_Config" path="#['/api/locations/' ++ vars.locationId]">
+            <http:response-validator>
+                <http:success-status-code-validator values="200..299" />
+            </http:response-validator>
             <http:headers><![CDATA[#[output application/java
 ---
 {
     "client_id": "${api.client.id}",
     "client_secret": "${api.client.secret}"
 }]]]></http:headers>
-            <http:response-validator>
-                <http:success-status-code-validator values="200..299" />
-            </http:response-validator>
         </http:request>
         <set-variable variableName="locationData" value="#[payload]" />
         
@@ -204,15 +204,15 @@ output application/java
     "latitude": vars.locationData.latitude as String,
     "longitude": vars.locationData.longitude as String
 }]]]></http:query-params>
+                <http:response-validator>
+                    <http:success-status-code-validator values="200..299" />
+                </http:response-validator>
                 <http:headers><![CDATA[#[output application/java
 ---
 {
     "client_id": "${api.client.id}",
     "client_secret": "${api.client.secret}"
 }]]]></http:headers>
-                <http:response-validator>
-                    <http:success-status-code-validator values="200..299" />
-                </http:response-validator>
             </http:request>
             <set-variable variableName="weatherData" value="#[payload]" />
             <error-handler>
@@ -239,30 +239,30 @@ vars.locationData ++ {
             <http:query-params><![CDATA[#[output application/java
 ---
 attributes.queryParams]]]></http:query-params>
+            <http:response-validator>
+                <http:success-status-code-validator values="200..299" />
+            </http:response-validator>
             <http:headers><![CDATA[#[output application/java
 ---
 {
     "client_id": "${api.client.id}",
     "client_secret": "${api.client.secret}"
 }]]]></http:headers>
-            <http:response-validator>
-                <http:success-status-code-validator values="200..299" />
-            </http:response-validator>
         </http:request>
     </flow>
     
     <flow name="process-post-itinerary">
         <http:request method="POST" config-ref="Database_API_Config" path="/api/itineraries">
             <http:body><![CDATA[#[payload]]]></http:body>
+            <http:response-validator>
+                <http:success-status-code-validator values="200..299" />
+            </http:response-validator>
             <http:headers><![CDATA[#[output application/java
 ---
 {
     "client_id": "${api.client.id}",
     "client_secret": "${api.client.secret}"
 }]]]></http:headers>
-            <http:response-validator>
-                <http:success-status-code-validator values="200..299" />
-            </http:response-validator>
         </http:request>
     </flow>
     
@@ -276,15 +276,15 @@ output application/java
             </ee:variables>
         </ee:transform>
         <http:request method="GET" config-ref="Database_API_Config" path="#['/api/itineraries/' ++ vars.itineraryId]">
+            <http:response-validator>
+                <http:success-status-code-validator values="200..299" />
+            </http:response-validator>
             <http:headers><![CDATA[#[output application/java
 ---
 {
     "client_id": "${api.client.id}",
     "client_secret": "${api.client.secret}"
 }]]]></http:headers>
-            <http:response-validator>
-                <http:success-status-code-validator values="200..299" />
-            </http:response-validator>
         </http:request>
     </flow>
     
@@ -293,30 +293,30 @@ output application/java
             <http:query-params><![CDATA[#[output application/java
 ---
 attributes.queryParams]]]></http:query-params>
+            <http:response-validator>
+                <http:success-status-code-validator values="200..299" />
+            </http:response-validator>
             <http:headers><![CDATA[#[output application/java
 ---
 {
     "client_id": "${api.client.id}",
     "client_secret": "${api.client.secret}"
 }]]]></http:headers>
-            <http:response-validator>
-                <http:success-status-code-validator values="200..299" />
-            </http:response-validator>
         </http:request>
     </flow>
     
     <flow name="process-post-rating">
         <http:request method="POST" config-ref="Database_API_Config" path="/api/ratings">
             <http:body><![CDATA[#[payload]]]></http:body>
+            <http:response-validator>
+                <http:success-status-code-validator values="200..299" />
+            </http:response-validator>
             <http:headers><![CDATA[#[output application/java
 ---
 {
     "client_id": "${api.client.id}",
     "client_secret": "${api.client.secret}"
 }]]]></http:headers>
-            <http:response-validator>
-                <http:success-status-code-validator values="200..299" />
-            </http:response-validator>
         </http:request>
     </flow>
     
@@ -325,30 +325,30 @@ attributes.queryParams]]]></http:query-params>
             <http:query-params><![CDATA[#[output application/java
 ---
 attributes.queryParams]]]></http:query-params>
+            <http:response-validator>
+                <http:success-status-code-validator values="200..299" />
+            </http:response-validator>
             <http:headers><![CDATA[#[output application/java
 ---
 {
     "client_id": "${api.client.id}",
     "client_secret": "${api.client.secret}"
 }]]]></http:headers>
-            <http:response-validator>
-                <http:success-status-code-validator values="200..299" />
-            </http:response-validator>
         </http:request>
     </flow>
     
     <flow name="process-post-favorite">
         <http:request method="POST" config-ref="Database_API_Config" path="/api/favorites">
             <http:body><![CDATA[#[payload]]]></http:body>
+            <http:response-validator>
+                <http:success-status-code-validator values="200..299" />
+            </http:response-validator>
             <http:headers><![CDATA[#[output application/java
 ---
 {
     "client_id": "${api.client.id}",
     "client_secret": "${api.client.secret}"
 }]]]></http:headers>
-            <http:response-validator>
-                <http:success-status-code-validator values="200..299" />
-            </http:response-validator>
         </http:request>
     </flow>
     
@@ -362,15 +362,15 @@ output application/java
             </ee:variables>
         </ee:transform>
         <http:request method="DELETE" config-ref="Database_API_Config" path="#['/api/favorites/' ++ vars.favoriteId]">
+            <http:response-validator>
+                <http:success-status-code-validator values="200..299" />
+            </http:response-validator>
             <http:headers><![CDATA[#[output application/java
 ---
 {
     "client_id": "${api.client.id}",
     "client_secret": "${api.client.secret}"
 }]]]></http:headers>
-            <http:response-validator>
-                <http:success-status-code-validator values="200..299" />
-            </http:response-validator>
         </http:request>
     </flow>
     
