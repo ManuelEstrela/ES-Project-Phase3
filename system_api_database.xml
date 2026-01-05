@@ -134,7 +134,7 @@ output application/json
 </error-handler>
 </flow>
 <flow name="delete:\favorites\(favoriteId):system_api_database-config">
-<db:delete doc:name="Delete" doc:id="aa152e62-1c31-4cce-92ba-fd3a0a7f25b7" >
+<db:delete doc:name="Delete" doc:id="aa152e62-1c31-4cce-92ba-fd3a0a7f25b7" config-ref="Database_Config">
 			<db:sql ><![CDATA[DELETE FROM favorites
 WHERE id = :favoriteId;
 ]]></db:sql>
@@ -467,7 +467,7 @@ else
 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
-if (payload == null or sizeOf(payload) == 0)
+if (isEmpty(payload))
 { error: "User not found", userId: vars.userId }
 else
 payload]]></ee:set-payload>
@@ -487,25 +487,52 @@ output application/java
 ]]></ee:set-payload>
 </ee:message>
 </ee:transform>
-		<db:insert doc:name="Insert" doc:id="c8f89b7a-a58f-4a58-8960-44bbd3248706" config-ref="Database_Config">
-			<db:sql ><![CDATA[INSERT INTO favorites (userid, locationid)
+		<set-variable value="#[payload]" doc:name="Set Variable" doc:id="e7accc11-7891-4944-bb18-b9c06b4680ff" variableName="favoriteRequest"/>
+		<db:select doc:name="user exists" doc:id="318dee19-f3c1-4288-98e0-41fd92ca6e5d" config-ref="Database_Config">
+			<db:sql ><![CDATA[SELECT 1
+FROM favorites
+WHERE userid = :userid
+  AND locationid = :locationid;]]></db:sql>
+			<db:input-parameters ><![CDATA[#[payload]]]></db:input-parameters>
+		</db:select>
+		<choice doc:name="Choice" doc:id="cae0b273-dd57-422e-b82d-26c9542ba0c2" >
+			<when expression="#[!isEmpty(payload)]">
+				<set-variable value="409" doc:name="Set Variable" doc:id="737379f9-dc2c-42d5-bb89-b91ba66e8ecf" variableName="httpStatus"/>
+				<ee:transform doc:name="Transform Message" doc:id="172b234b-1e71-453e-9372-c3d37e462168" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+  error: "Favorite already exists",
+  userid: vars.favoriteRequest.userid,
+  locationid: vars.favoriteRequest.locationid
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</when>
+			<otherwise >
+				<db:insert doc:name="Insert" doc:id="c8f89b7a-a58f-4a58-8960-44bbd3248706" config-ref="Database_Config">
+			<db:sql><![CDATA[INSERT INTO favorites (userid, locationid)
 VALUES (:userid, :locationid);
 ]]></db:sql>
-			<db:input-parameters ><![CDATA[#[payload]]]></db:input-parameters>
+			<db:input-parameters><![CDATA[#[vars.favoriteRequest]]]></db:input-parameters>
 		</db:insert>
-		<ee:transform doc:name="Transform Message" doc:id="bd9e1830-2c3c-448b-8ce2-7f63b12ff6d1" >
-			<ee:message >
-				<ee:set-payload ><![CDATA[%dw 2.0
+				<set-variable value="201" doc:name="Set Variable" doc:id="2cfa1308-17ad-481c-becb-65f9daea5fa3" variableName="httpStatus" />
+				<ee:transform doc:name="Transform Message" doc:id="bd9e1830-2c3c-448b-8ce2-7f63b12ff6d1">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
 {
   message: "Favorite created",
-  userid: vars.userid default payload.userid,
-  locationid: vars.locationid default payload.locationid
-}
-]]></ee:set-payload>
+  userid: vars.favoriteRequest.userid,
+  locationid: vars.favoriteRequest.locationid
+}]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
+			</otherwise>
+		</choice>
 </flow>
 <flow name="post:\images:application\json:system_api_database-config">
 <ee:transform doc:name="Transform Message">
