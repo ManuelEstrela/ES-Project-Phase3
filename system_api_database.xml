@@ -208,42 +208,52 @@ message: "Missing or invalid parameter"
 </ee:message>
 </ee:transform>
 </flow>
-<flow name="patch:\itineraries\(itineraryId):application\json:system_api_database-config">
-<ee:transform doc:name="Transform Message">
-<ee:variables>
-<ee:set-variable variableName="itineraryId">attributes.uriParams.'itineraryId'</ee:set-variable>
-</ee:variables>
-</ee:transform>
-<ee:transform doc:name="Transform Message">
-<ee:message>
-<ee:set-payload><![CDATA[%dw 2.0
+	<flow name="patch:\itineraries\(itineraryId):application\json:system_api_database-config">
+		<ee:transform doc:name="Set itineraryId">
+		    <ee:variables>
+		      <ee:set-variable variableName="itineraryId"><![CDATA[attributes.uriParams.itineraryId]]></ee:set-variable>
+		    </ee:variables>
+		</ee:transform>
+		<db:update doc:name="Update" doc:id="5e48a755-a0c5-431d-a35f-58b22efe7394" config-ref="Database_Config">
+			<db:sql ><![CDATA[UPDATE itineraries 
+SET name = COALESCE(:name, name), startdate = COALESCE(:startdate, startdate),
+           enddate = COALESCE(:enddate, enddate), updated_at = NOW()
+WHERE id = :itineraryId]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+  name: payload.name default null,
+  startdate: payload.startdate default null,
+  enddate: payload.enddate default null,
+  itineraryId: vars.itineraryId as Number
+}]]]></db:input-parameters>
+		</db:update>
+		<db:select doc:name="Select" doc:id="e68b1430-0e1a-40c4-bf0f-5c30093e9fa5" config-ref="Database_Config">
+			<db:sql ><![CDATA[SELECT 
+  id,
+  userid,
+  name,
+  startdate,
+  enddate,
+  created_at,
+  updated_at
+FROM itineraries
+WHERE id = :itineraryId]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{ itineraryId: vars.itineraryId }]]]></db:input-parameters>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="ac6db29d-db49-47bb-8264-b2d99cbd5129" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
 output application/json
 ---
-{
-id: 1,
-user_id: 42,
-name: "3 Dias em São Miguel",
-start_date: "2025-12-01",
-end_date: "2025-12-03",
-locations: [
-{
-location_id: 1,
-position: 1
-},
-{
-location_id: 5,
-position: 2
-},
-{
-location_id: 12,
-position: 3
-}
-],
-created_at: "2025-11-15T10:00:00Z"
-} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
-</ee:message>
-</ee:transform>
-</flow>
+if (isEmpty(payload))
+  {
+    error: "Itinerary not found", 
+    itineraryId: vars.itineraryId
+  }
+else 
+  payload[0]]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
 <flow name="patch:\ratings\(ratingId):application\json:system_api_database-config">
 <ee:transform doc:name="Transform Message">
 <ee:variables>
