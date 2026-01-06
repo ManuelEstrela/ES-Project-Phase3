@@ -17,21 +17,12 @@ http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/cu
     </http:listener-config>
 
     <db:config name="Database_Config">
-        <db:my-sql-connection 
-            host="azoresuncharted-azoresuncharted2025.g.aivencloud.com" 
-            port="23893" 
-            user="avnadmin" 
-            password="AVNS_w-FYkm3rVf2C0PdssNr" 
-            database="defaultdb">
-            <db:connection-properties>
-                <db:connection-property key="useSSL" value="true"/>
-                <db:connection-property key="requireSSL" value="true"/>
-                <db:connection-property key="verifyServerCertificate" value="false"/>
-                <db:connection-property key="allowPublicKeyRetrieval" value="true"/>
-                <db:connection-property key="serverTimezone" value="UTC"/>
-            </db:connection-properties>
-        </db:my-sql-connection>
-    </db:config>
+    <db:generic-connection 
+        url="jdbc:mysql://azoresuncharted-azoresuncharted2025.g.aivencloud.com:23893/defaultdb?useSSL=true&amp;requireSSL=true&amp;verifyServerCertificate=false&amp;allowPublicKeyRetrieval=true&amp;serverTimezone=UTC"
+        driverClassName="com.mysql.cj.jdbc.Driver"
+        user="avnadmin"
+        password="AVNS_w-FYkm3rVf2C0PdssNr"/>
+	</db:config>
 
     <flow name="database-api-main">
         <http:listener config-ref="httpListenerConfig" path="/api/*">
