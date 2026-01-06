@@ -1,287 +1,361 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<mule xmlns="http://www.mulesoft.org/schema/mule/core" 
-      xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" 
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" 
+      xmlns="http://www.mulesoft.org/schema/mule/core" 
+      xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" 
       xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" 
       xmlns:http="http://www.mulesoft.org/schema/mule/http" 
       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
       xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd 
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd 
-http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd 
-http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
-    
-    <!-- Load Properties File -->
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+
     <configuration-properties file="properties.yaml"/>
     
-    <!-- HTTP Listener Configuration -->
     <http:listener-config name="httpListenerConfig">
         <http:listener-connection host="0.0.0.0" port="${http.port}" />
     </http:listener-config>
-    
-    <!-- APIKit Configuration -->
-    <apikit:config name="apiConfig" api="resource::1782ea4a-5a87-4bb9-8106-5f1c978c57b1:system_api_database:1.0.0:raml:zip:system_api_database.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
-    
-    <!-- Main Flow -->
-    <flow name="main">
+
+    <db:config name="Database_Config">
+        <db:my-sql-connection 
+            host="azoresuncharted-azoresuncharted2025.g.aivencloud.com" 
+            port="23893" 
+            user="avnadmin" 
+            password="AVNS_w-FYkm3rVf2C0PdssNr" 
+            database="defaultdb">
+            <db:connection-properties>
+                <db:connection-property key="useSSL" value="true"/>
+                <db:connection-property key="requireSSL" value="true"/>
+                <db:connection-property key="verifyServerCertificate" value="false"/>
+                <db:connection-property key="allowPublicKeyRetrieval" value="true"/>
+                <db:connection-property key="serverTimezone" value="UTC"/>
+            </db:connection-properties>
+        </db:my-sql-connection>
+    </db:config>
+
+    <flow name="database-api-main">
         <http:listener config-ref="httpListenerConfig" path="/api/*">
             <http:response statusCode="#[vars.httpStatus default 200]">
                 <http:headers>#[vars.outboundHeaders default {}]</http:headers>
             </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
         </http:listener>
-        <apikit:router config-ref="apiConfig" />
+        
+        <choice doc:name="Route Request">
+            <when expression="#[attributes.method == 'GET' and attributes.requestPath == '/api/locations']">
+                <flow-ref name="get-locations" />
+            </when>
+            <when expression="#[attributes.method == 'GET' and attributes.requestPath matches /\/api\/locations\/\d+/]">
+                <flow-ref name="get-location-by-id" />
+            </when>
+            <when expression="#[attributes.method == 'GET' and attributes.requestPath == '/api/users']">
+                <flow-ref name="get-users" />
+            </when>
+            <when expression="#[attributes.method == 'POST' and attributes.requestPath == '/api/users']">
+                <flow-ref name="post-user" />
+            </when>
+            <when expression="#[attributes.method == 'POST' and attributes.requestPath == '/api/users/login']">
+                <flow-ref name="post-user-login" />
+            </when>
+            <when expression="#[attributes.method == 'GET' and attributes.requestPath == '/api/ratings']">
+                <flow-ref name="get-ratings" />
+            </when>
+            <when expression="#[attributes.method == 'POST' and attributes.requestPath == '/api/ratings']">
+                <flow-ref name="post-rating" />
+            </when>
+            <when expression="#[attributes.method == 'GET' and attributes.requestPath == '/api/favorites']">
+                <flow-ref name="get-favorites" />
+            </when>
+            <when expression="#[attributes.method == 'POST' and attributes.requestPath == '/api/favorites']">
+                <flow-ref name="post-favorite" />
+            </when>
+            <when expression="#[attributes.method == 'DELETE' and attributes.requestPath matches /\/api\/favorites\/\d+/]">
+                <flow-ref name="delete-favorite" />
+            </when>
+            <when expression="#[attributes.method == 'GET' and attributes.requestPath == '/api/itineraries']">
+                <flow-ref name="get-itineraries" />
+            </when>
+            <when expression="#[attributes.method == 'POST' and attributes.requestPath == '/api/itineraries']">
+                <flow-ref name="post-itinerary" />
+            </when>
+            <when expression="#[attributes.method == 'GET' and attributes.requestPath matches /\/api\/itineraries\/\d+/]">
+                <flow-ref name="get-itinerary-by-id" />
+            </when>
+            <otherwise>
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Endpoint not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </otherwise>
+        </choice>
     </flow>
     
-    <!-- POST /users - Register -->
-    <flow name="post:\users:application\json:apiConfig">
+    <flow name="get-locations">
+        <db:select config-ref="Database_Config">
+            <db:sql><![CDATA[SELECT id, name, description, island, latitude, longitude, category, imageurl FROM locations]]></db:sql>
+        </db:select>
         <ee:transform>
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
-{
-    token: "mock-token-" ++ randomInt(99999),
-    expiresIn: 86400,
-    user: {
-        id: "user-" ++ randomInt(99999),
-        name: payload.name,
-        email: payload.email
-    }
-}]]></ee:set-payload>
+payload]]></ee:set-payload>
             </ee:message>
         </ee:transform>
     </flow>
     
-    <!-- POST /users/login -->
-    <flow name="post:\users\login:application\json:apiConfig">
+    <flow name="get-location-by-id">
         <ee:transform>
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-    token: "mock-token-" ++ randomInt(99999),
-    expiresIn: 86400,
-    user: {
-        id: "user-123",
-        name: "Demo User",
-        email: payload.email
-    }
-}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-    </flow>
-    
-    <!-- GET /locations -->
-    <flow name="get:\locations:apiConfig">
-        <ee:transform>
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-[
-    {
-        id: "1",
-        name: "Lagoa do Fogo",
-        description: "Beautiful crater lake in São Miguel",
-        island: "São Miguel",
-        latitude: 37.7688,
-        longitude: -25.4734,
-        category: "Nature",
-        image_url: "https://example.com/lagoa-fogo.jpg"
-    },
-    {
-        id: "2",
-        name: "Sete Cidades",
-        description: "Twin lakes with stunning views",
-        island: "São Miguel",
-        latitude: 37.8579,
-        longitude: -25.7887,
-        category: "Nature",
-        image_url: "https://example.com/sete-cidades.jpg"
-    },
-    {
-        id: "3",
-        name: "Furnas",
-        description: "Volcanic hot springs and thermal baths",
-        island: "São Miguel",
-        latitude: 37.7743,
-        longitude: -25.3208,
-        category: "Hot Springs",
-        image_url: "https://example.com/furnas.jpg"
-    }
-]]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-    </flow>
-    
-    <!-- POST /locations -->
-    <flow name="post:\locations:application\json:apiConfig">
-        <ee:transform>
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-payload ++ {
-    id: "new-" ++ randomInt(99999)
-}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-    </flow>
-    
-    <!-- GET /locations/{locationId} -->
-    <flow name="get:\locations\(locationId):apiConfig">
-        <ee:transform>
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-    id: attributes.uriParams.locationId,
-    name: "Lagoa do Fogo",
-    description: "Beautiful crater lake",
-    island: "São Miguel",
-    latitude: 37.7688,
-    longitude: -25.4734,
-    category: "Nature",
-    image_url: "https://example.com/image.jpg"
-}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-    </flow>
-    
-    <!-- PATCH /locations/{locationId} -->
-    <flow name="patch:\locations\(locationId):application\json:apiConfig">
-        <ee:transform>
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-payload ++ {
-    id: attributes.uriParams.locationId
-}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
-    </flow>
-    
-    <!-- DELETE /locations/{locationId} -->
-    <flow name="delete:\locations\(locationId):apiConfig">
-        <ee:transform>
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-null]]></ee:set-payload>
-            </ee:message>
             <ee:variables>
-                <ee:set-variable variableName="httpStatus">204</ee:set-variable>
+                <ee:set-variable variableName="locationId"><![CDATA[%dw 2.0
+output application/java
+---
+(attributes.requestPath splitBy '/' )[3] as Number]]></ee:set-variable>
             </ee:variables>
         </ee:transform>
-    </flow>
-    
-    <!-- GET /ratings -->
-    <flow name="get:\ratings:apiConfig">
+        <db:select config-ref="Database_Config">
+            <db:sql><![CDATA[SELECT id, name, description, island, latitude, longitude, category, imageurl FROM locations WHERE id = :locationId]]></db:sql>
+            <db:input-parameters><![CDATA[#[{locationId: vars.locationId}]]]></db:input-parameters>
+        </db:select>
         <ee:transform>
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
-[]]]></ee:set-payload>
+if (isEmpty(payload))
+  {error: "Location not found", locationId: vars.locationId}
+else
+  payload[0]]]></ee:set-payload>
             </ee:message>
         </ee:transform>
     </flow>
     
-    <!-- POST /ratings -->
-    <flow name="post:\ratings:application\json:apiConfig">
+    <flow name="get-users">
+        <db:select config-ref="Database_Config">
+            <db:sql><![CDATA[SELECT id, name, email, role, created_at, updated_at FROM users]]></db:sql>
+        </db:select>
         <ee:transform>
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
-payload ++ {
-    id: "rating-" ++ randomInt(99999),
-    created_at: now() as String
-}]]></ee:set-payload>
+payload]]></ee:set-payload>
             </ee:message>
         </ee:transform>
     </flow>
     
-    <!-- GET /users/{userId} -->
-    <flow name="get:\users\(userId):apiConfig">
+    <flow name="post-user">
+        <db:insert config-ref="Database_Config">
+            <db:sql><![CDATA[INSERT INTO users (name, email, password, role) VALUES (:name, :email, :password, 'user')]]></db:sql>
+            <db:input-parameters><![CDATA[#[{
+  name: payload.name,
+  email: payload.email,
+  password: payload.password
+}]]]></db:input-parameters>
+        </db:insert>
+        <db:select config-ref="Database_Config">
+            <db:sql><![CDATA[SELECT id, name, email, role FROM users WHERE email = :email]]></db:sql>
+            <db:input-parameters><![CDATA[#[{email: payload.email}]]]></db:input-parameters>
+        </db:select>
         <ee:transform>
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
-{
-    id: attributes.uriParams.userId,
-    name: "Demo User",
-    email: "demo@example.com",
-    role: "user",
-    created_at: now() as String
-}]]></ee:set-payload>
+payload[0]]]></ee:set-payload>
             </ee:message>
         </ee:transform>
     </flow>
     
-    <!-- PATCH /users/{userId} -->
-    <flow name="patch:\users\(userId):application\json:apiConfig">
+    <flow name="post-user-login">
+        <db:select config-ref="Database_Config">
+            <db:sql><![CDATA[SELECT id, name, email, role FROM users WHERE email = :email AND password = :password]]></db:sql>
+            <db:input-parameters><![CDATA[#[{
+  email: payload.email,
+  password: payload.password
+}]]]></db:input-parameters>
+        </db:select>
         <ee:transform>
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
-{
-    id: attributes.uriParams.userId,
-    name: payload.name,
-    email: "demo@example.com",
-    role: "user",
-    created_at: now() as String
-}]]></ee:set-payload>
+if (isEmpty(payload))
+  {error: "Invalid credentials"}
+else
+  payload[0]]]></ee:set-payload>
             </ee:message>
         </ee:transform>
     </flow>
     
-    <!-- DELETE /users/{userId} -->
-    <flow name="delete:\users\(userId):apiConfig">
+    <flow name="get-ratings">
+        <set-variable value="#[attributes.queryParams.userId default null]" variableName="userId" />
+        <set-variable value="#[attributes.queryParams.locationId default null]" variableName="locationId" />
+        <db:select config-ref="Database_Config">
+            <db:sql><![CDATA[SELECT id, locationid, userid, rating, comment, created_at FROM ratings 
+WHERE (:userId IS NULL OR userid = :userId) AND (:locationId IS NULL OR locationid = :locationId)]]></db:sql>
+            <db:input-parameters><![CDATA[#[{
+  userId: vars.userId,
+  locationId: vars.locationId
+}]]]></db:input-parameters>
+        </db:select>
         <ee:transform>
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
-null]]></ee:set-payload>
+payload]]></ee:set-payload>
             </ee:message>
+        </ee:transform>
+    </flow>
+    
+    <flow name="post-rating">
+        <db:insert config-ref="Database_Config">
+            <db:sql><![CDATA[INSERT INTO ratings (locationid, userid, rating, comment) VALUES (:locationId, :userId, :rating, :comment)]]></db:sql>
+            <db:input-parameters><![CDATA[#[{
+  locationId: payload.locationId,
+  userId: payload.userId,
+  rating: payload.rating,
+  comment: payload.comment default ""
+}]]]></db:input-parameters>
+        </db:insert>
+        <ee:transform>
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Rating created"}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    
+    <flow name="get-favorites">
+        <set-variable value="#[attributes.queryParams.userId as Number]" variableName="userId" />
+        <db:select config-ref="Database_Config">
+            <db:sql><![CDATA[SELECT id, userid, locationid, created_at FROM favorites WHERE userid = :userId]]></db:sql>
+            <db:input-parameters><![CDATA[#[{userId: vars.userId}]]]></db:input-parameters>
+        </db:select>
+        <ee:transform>
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    
+    <flow name="post-favorite">
+        <db:insert config-ref="Database_Config">
+            <db:sql><![CDATA[INSERT INTO favorites (userid, locationid) VALUES (:userId, :locationId)]]></db:sql>
+            <db:input-parameters><![CDATA[#[{
+  userId: payload.userid,
+  locationId: payload.locationid
+}]]]></db:input-parameters>
+        </db:insert>
+        <ee:transform>
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Favorite created"}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    
+    <flow name="delete-favorite">
+        <ee:transform>
             <ee:variables>
-                <ee:set-variable variableName="httpStatus">204</ee:set-variable>
+                <ee:set-variable variableName="favoriteId"><![CDATA[%dw 2.0
+output application/java
+---
+(attributes.requestPath splitBy '/' )[3] as Number]]></ee:set-variable>
             </ee:variables>
         </ee:transform>
-    </flow>
-    
-    <!-- PATCH /ratings/{ratingId} -->
-    <flow name="patch:\ratings\(ratingId):application\json:apiConfig">
+        <db:delete config-ref="Database_Config">
+            <db:sql><![CDATA[DELETE FROM favorites WHERE id = :favoriteId]]></db:sql>
+            <db:input-parameters><![CDATA[#[{favoriteId: vars.favoriteId}]]]></db:input-parameters>
+        </db:delete>
         <ee:transform>
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
-payload ++ {
-    id: attributes.uriParams.ratingId,
-    created_at: now() as String
-}]]></ee:set-payload>
+{message: "Favorite deleted"}]]></ee:set-payload>
             </ee:message>
         </ee:transform>
     </flow>
     
-    <!-- DELETE /ratings/{ratingId} -->
-    <flow name="delete:\ratings\(ratingId):apiConfig">
+    <flow name="get-itineraries">
+        <set-variable value="#[attributes.queryParams.userId default null]" variableName="userId" />
+        <db:select config-ref="Database_Config">
+            <db:sql><![CDATA[SELECT id, userid, name, startdate, enddate, created_at, updated_at FROM itineraries 
+WHERE :userId IS NULL OR userid = :userId]]></db:sql>
+            <db:input-parameters><![CDATA[#[{userId: vars.userId}]]]></db:input-parameters>
+        </db:select>
         <ee:transform>
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
-null]]></ee:set-payload>
+payload]]></ee:set-payload>
             </ee:message>
+        </ee:transform>
+    </flow>
+    
+    <flow name="post-itinerary">
+        <db:insert config-ref="Database_Config">
+            <db:sql><![CDATA[INSERT INTO itineraries (userid, name, startdate, enddate) VALUES (:userId, :name, :startDate, :endDate)]]></db:sql>
+            <db:input-parameters><![CDATA[#[{
+  userId: payload.userId,
+  name: payload.name,
+  startDate: payload.startDate,
+  endDate: payload.endDate
+}]]]></db:input-parameters>
+        </db:insert>
+        <ee:transform>
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Itinerary created"}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    
+    <flow name="get-itinerary-by-id">
+        <ee:transform>
             <ee:variables>
-                <ee:set-variable variableName="httpStatus">204</ee:set-variable>
+                <ee:set-variable variableName="itineraryId"><![CDATA[%dw 2.0
+output application/java
+---
+(attributes.requestPath splitBy '/' )[3] as Number]]></ee:set-variable>
             </ee:variables>
+        </ee:transform>
+        <db:select config-ref="Database_Config">
+            <db:sql><![CDATA[SELECT id, userid, name, startdate, enddate, created_at, updated_at FROM itineraries WHERE id = :itineraryId]]></db:sql>
+            <db:input-parameters><![CDATA[#[{itineraryId: vars.itineraryId}]]]></db:input-parameters>
+        </db:select>
+        <ee:transform>
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+if (isEmpty(payload))
+  {error: "Itinerary not found", itineraryId: vars.itineraryId}
+else
+  payload[0]]]></ee:set-payload>
+            </ee:message>
         </ee:transform>
     </flow>
     
