@@ -2,18 +2,22 @@
 <mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
 http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
 http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
+
+<configuration-properties file="mule-artifact.properties"/>
+
 <http:listener-config name="system_api_database-httpListenerConfig">
 <http:listener-connection host="0.0.0.0" port="8082" />
 </http:listener-config>
+
 <apikit:config name="system_api_database-config" api="resource::1782ea4a-5a87-4bb9-8106-5f1c978c57b1:system_api_database:1.0.0:raml:zip:system_api_database.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
-<db:config name="Database_Config" doc:name="Database Config" doc:id="48022f6e-cca2-4a7c-b15a-55b7b9218257" >
-<db:my-sql-connection host="azoresuncharted-azoresuncharted2025.g.aivencloud.com" port="23893" user="avnadmin" password="AVNS_w-FYkm3rVf2C0PdssNr" database="defaultdb">
-<db:connection-properties>
-<db:connection-property key="useSSL" value="true"/>
-<db:connection-property key="allowPublicKeyRetrieval" value="true"/>
-<db:connection-property key="serverTimezone" value="UTC"/>
-</db:connection-properties>
-</db:my-sql-connection>
+<db:config name="Database_Config" doc:name="Database Config">
+    <db:my-sql-connection host="azoresuncharted-azoresuncharted2025.g.aivencloud.com" port="23893" user="avnadmin" password="AVNS_w-FYkm3rVf2C0PdssNr" database="defaultdb">
+        <db:connection-properties>
+            <db:connection-property key="useSSL" value="true"/>
+            <db:connection-property key="allowPublicKeyRetrieval" value="true"/>
+            <db:connection-property key="serverTimezone" value="UTC"/>
+        </db:connection-properties>
+    </db:my-sql-connection>
 </db:config>
 <flow name="system_api_database-main">
 <http:listener config-ref="system_api_database-httpListenerConfig" path="/api/*">
@@ -135,7 +139,7 @@ output application/json
 </error-handler>
 </flow>
 <flow name="delete:\favorites\(favoriteId):system_api_database-config">
-<db:delete doc:name="Delete" doc:id="aa152e62-1c31-4cce-92ba-fd3a0a7f25b7" config-ref="Database_Config">
+<db:delete doc:name="Delete" doc:id="514d1b47-b552-45d6-b2d9-d1e40b6f7e50" config-ref="Database_Config">
 			<db:sql ><![CDATA[DELETE FROM favorites
 WHERE id = :favoriteId;
 ]]></db:sql>
@@ -215,7 +219,7 @@ message: "Missing or invalid parameter"
 		      <ee:set-variable variableName="itineraryId"><![CDATA[attributes.uriParams.itineraryId]]></ee:set-variable>
 		    </ee:variables>
 		</ee:transform>
-		<db:update doc:name="Update" doc:id="5e48a755-a0c5-431d-a35f-58b22efe7394" config-ref="Database_Config">
+		<db:update doc:name="Update" doc:id="b22c96c3-2ffa-4718-961c-9c32b3dc4f0c" config-ref="Database_Config">
 			<db:sql ><![CDATA[UPDATE itineraries 
 SET name = COALESCE(:name, name), startdate = COALESCE(:startdate, startdate),
            enddate = COALESCE(:enddate, enddate), updated_at = NOW()
@@ -227,7 +231,7 @@ WHERE id = :itineraryId]]></db:sql>
   itineraryId: vars.itineraryId as Number
 }]]]></db:input-parameters>
 		</db:update>
-		<db:select doc:name="Select" doc:id="e68b1430-0e1a-40c4-bf0f-5c30093e9fa5" config-ref="Database_Config">
+		<db:select doc:name="Select" doc:id="7e61a090-7198-49d0-9987-875f5e83b159" config-ref="Database_Config">
 			<db:sql ><![CDATA[SELECT 
   id,
   userid,
@@ -240,7 +244,7 @@ FROM itineraries
 WHERE id = :itineraryId]]></db:sql>
 			<db:input-parameters ><![CDATA[#[{ itineraryId: vars.itineraryId }]]]></db:input-parameters>
 		</db:select>
-		<ee:transform doc:name="Transform Message" doc:id="ac6db29d-db49-47bb-8264-b2d99cbd5129" >
+		<ee:transform doc:name="Transform Message" doc:id="e55e2dca-ecf6-4081-9654-0f4fed52739d" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
 output application/json
@@ -261,7 +265,7 @@ else
 <ee:set-variable variableName="ratingId"><![CDATA[attributes.uriParams.ratingId]]></ee:set-variable>
 </ee:variables>
 </ee:transform>
-<db:update doc:name="Update" doc:id="4a8f428d-a2a2-426b-a635-ca434d54259a" config-ref="Database_Config">
+<db:update doc:name="Update" doc:id="1ce1e392-b49f-4f53-bb6a-8b0286dc42fa" config-ref="Database_Config">
 			<db:sql ><![CDATA[UPDATE ratings 
 SET rating = COALESCE(:rating, rating),
           comment = COALESCE(:comment, comment)
@@ -272,7 +276,7 @@ comment: payload.comment default null,
 ratingId: vars.ratingId as Number
 }]]]></db:input-parameters>
 		</db:update>
-		<db:select doc:name="Select" doc:id="94752115-c248-440e-a7b9-5daadb57cdc4" config-ref="Database_Config">
+		<db:select doc:name="Select" doc:id="7f57d500-ff3d-4f16-82ca-e4a225d872bd" config-ref="Database_Config">
 			<db:sql ><![CDATA[SELECT id, locationid, userid, rating, comment, created_at
 FROM ratings 
 WHERE id = :ratingId]]></db:sql>
@@ -296,7 +300,7 @@ else
 <ee:set-variable variableName="userId"><![CDATA[attributes.uriParams.userId]]></ee:set-variable>
 </ee:variables>
 </ee:transform>
-		<db:update doc:name="Update" doc:id="49ae70ae-6ba8-4e48-94f9-91fdaa5f3647" config-ref="Database_Config">
+		<db:update doc:name="Update" doc:id="1b232b1e-1ab4-4b62-bf96-dd17f6db7fab" config-ref="Database_Config">
 			<db:sql><![CDATA[UPDATE users
 SET
   name = COALESCE(:name, name),
@@ -314,7 +318,7 @@ role: payload.role default null,
 userId: vars.userId as Number
 }]]]></db:input-parameters>
 		</db:update>
-		<db:select doc:name="Select" doc:id="27123182-9074-4bd7-87ca-5d7685d5ddc2" config-ref="Database_Config">
+		<db:select doc:name="Select" doc:id="fbfe1471-f7d3-42c9-b4c9-e30e5dc2a9e1" config-ref="Database_Config">
 			<db:sql ><![CDATA[SELECT id, name, email, role, created_at, updated_at
 FROM users
 WHERE id = :userId;
@@ -334,14 +338,14 @@ else
 </ee:transform>
 </flow>
 <flow name="get:\favorites:system_api_database-config">
-<set-variable value="#[attributes.queryParams.userId as Number default 0]" doc:name="Set Variable" doc:id="1a3ed161-b0b2-43bf-a0ca-164e8085a7ab" variableName="userId"/>
-		<db:select doc:name="Select" doc:id="484709cb-be81-4fe5-8bba-0a8cb5bb1aca" config-ref="Database_Config" transactionalAction="NOT_SUPPORTED" fetchSize="100" maxRows="1000">
+<set-variable value="#[attributes.queryParams.userId as Number default 0]" doc:name="Set Variable" doc:id="e991c920-2627-4c96-8728-8610e07ba02f" variableName="userId"/>
+		<db:select doc:name="Select" doc:id="1a7fa575-8be3-4b3b-a886-ee29e308a7e2" config-ref="Database_Config" transactionalAction="NOT_SUPPORTED" fetchSize="100" maxRows="1000">
 			<db:sql ><![CDATA[SELECT id, userid as userId, locationid as locationId, created_at 
 FROM favorites 
 WHERE userid = :userId]]></db:sql>
 			<db:input-parameters ><![CDATA[#[{userId: vars.userId}]]]></db:input-parameters>
 		</db:select>
-		<ee:transform doc:name="Transform Message" doc:id="0861e3ac-89e2-4a73-aacb-5611a1b77576" >
+		<ee:transform doc:name="Transform Message" doc:id="ce4ae5a7-0e3d-4e6e-ad75-90b816235947" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
 output application/json
@@ -351,7 +355,7 @@ payload default []]]></ee:set-payload>
 		</ee:transform>
 </flow>
 <flow name="get:\images:system_api_database-config">
-		<db:select doc:name="Select" doc:id="9f3f68ca-b293-4e5b-b577-e1b109f5ffb3" config-ref="Database_Config">
+		<db:select doc:name="Select" doc:id="041a4c34-128f-4fe9-9c12-7110246ee7db" config-ref="Database_Config">
 			<db:sql ><![CDATA[SELECT id, location_id as locationId, image_url, created_at 
 FROM images
 WHERE location_id = :locationId]]></db:sql>
@@ -367,53 +371,43 @@ payload default []]]></ee:set-payload>
 </ee:transform>
 </flow>
 <flow name="get:\itineraries:system_api_database-config">
-		<ee:transform doc:name="Transform Message">
-<ee:message>
-<ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-[
-{
-id: 1,
-user_id: 42,
-name: "3 Dias em São Miguel",
-start_date: "2025-12-01",
-end_date: "2025-12-03",
-locations: [
-{
-location_id: 1,
-position: 1
-},
-{
-location_id: 5,
-position: 2
-}
-],
-created_at: "2025-11-15T10:00:00Z"
-}
-] as Array {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
-</ee:message>
-</ee:transform>
+  <set-variable value="#[attributes.queryParams.userId default null]" variableName="userId"/>
+  <db:select config-ref="Database_Config">
+    <db:sql><![CDATA[
+SELECT id, userid, name, startdate, enddate, created_at, updated_at
+FROM itineraries
+WHERE :userId IS NULL OR userid = :userId
+]]></db:sql>
+    <db:input-parameters><![CDATA[#[{userId: vars.userId}]]]></db:input-parameters>
+  </db:select>
+  <ee:transform>
+    <ee:message>
+      <ee:set-payload><![CDATA[%dw 2.0 output application/json --- payload]]></ee:set-payload>
+    </ee:message>
+  </ee:transform>
 </flow>
 <flow name="get:\ratings:system_api_database-config">
-		<set-variable value="#[attributes.queryParams.userId as Number default 0]" doc:name="Set Variable" doc:id="a67637ee-166b-421d-a39a-e08ae0dcbcb4" variableName="userId" />
-		<db:select doc:name="Select" doc:id="5a641327-50dd-4e4a-ae3c-54eff8aff04e" config-ref="Database_Config">
-			<db:sql ><![CDATA[SELECT id, locationid as locationId, userid as userId, rating, comment, created_at 
-FROM ratings 
-WHERE userid = :userId]]></db:sql>
-			<db:input-parameters ><![CDATA[#[{userId: vars.userId}]]]></db:input-parameters>
-		</db:select>
-		<ee:transform doc:name="Transform Message">
-<ee:message>
-<ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-payload default []]]></ee:set-payload>
-</ee:message>
-</ee:transform>
+  <set-variable value="#[attributes.queryParams.userId default null]" variableName="userId"/>
+  <set-variable value="#[attributes.queryParams.locationId default null]" variableName="locationId"/>
+
+  <db:select config-ref="Database_Config">
+    <db:sql><![CDATA[
+SELECT id, locationid, userid, rating, comment, created_at
+FROM ratings
+WHERE (:userId IS NULL OR userid = :userId)
+AND   (:locationId IS NULL OR locationid = :locationId)
+]]></db:sql>
+    <db:input-parameters><![CDATA[#[{userId: vars.userId, locationId: vars.locationId}]]]></db:input-parameters>
+  </db:select>
+
+  <ee:transform>
+    <ee:message>
+      <ee:set-payload><![CDATA[%dw 2.0 output application/json --- payload]]></ee:set-payload>
+    </ee:message>
+  </ee:transform>
 </flow>
 <flow name="get:\ratings\summary:system_api_database-config">
-<db:select doc:name="Select" doc:id="de08693f-aa79-4cfc-8e28-b904c01c247d" config-ref="Database_Config">
+<db:select doc:name="Select" doc:id="9edd404f-f7ab-4f9f-956b-8f5de1e97ac5" config-ref="Database_Config">
 			<db:sql ><![CDATA[SELECT locationId as locationId, AVG(rating) as averageRating, COUNT(*) as totalRatings
 FROM ratings 
 WHERE locationid = :locationId
@@ -430,28 +424,65 @@ payload default []]]></ee:set-payload>
 </ee:transform>
 </flow>
 <flow name="get:\itineraries\(itineraryId):system_api_database-config">
-		<db:select doc:name="Select" doc:id="0feb0b31-20f2-47d9-b14b-d92cfe76d7a4" config-ref="Database_Config">
-			<db:sql ><![CDATA[SELECT *
-FROM itineraries
-WHERE id = :itineraryId;
-
-
+  <db:select config-ref="Database_Config">
+    <db:sql><![CDATA[
+SELECT id, userid, name, startdate, enddate, created_at, updated_at
+FROM itineraries WHERE id = :itineraryId
 ]]></db:sql>
-			<db:input-parameters ><![CDATA[#[{ itineraryId: attributes.uriParams.itineraryId }]]]></db:input-parameters>
-		</db:select>
-		<ee:transform doc:name="Transform Message">
-<ee:message>
-<ee:set-payload><![CDATA[%dw 2.0
+    <db:input-parameters><![CDATA[#[{itineraryId: attributes.uriParams.itineraryId as Number}]]]></db:input-parameters>
+  </db:select>
+  <ee:transform>
+    <ee:message>
+      <ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
 if (isEmpty(payload))
-  { error: "Itinerary not found", itineraryId: attributes.uriParams.itineraryId }
-else
-  payload[0]
-]]></ee:set-payload>
-</ee:message>
-</ee:transform>
+ {error: "Itinerary not found", itineraryId: attributes.uriParams.itineraryId}
+else payload[0]]]></ee:set-payload>
+    </ee:message>
+  </ee:transform>
 </flow>
+
+
+
+<flow name="get:\locations:system_api_database-config">
+  <db:select config-ref="Database_Config">
+    <db:sql><![CDATA[
+SELECT id, name, description, island, latitude, longitude, category, imageurl
+FROM locations
+]]></db:sql>
+  </db:select>
+  <ee:transform>
+    <ee:message>
+      <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload default []]]></ee:set-payload>
+    </ee:message>
+  </ee:transform>
+</flow>
+
+<flow name="get:\locations\(locationId):system_api_database-config">
+  <db:select config-ref="Database_Config">
+    <db:sql><![CDATA[
+SELECT id, name, description, island, latitude, longitude, category, imageurl
+FROM locations
+WHERE id = :locationId
+]]></db:sql>
+    <db:input-parameters><![CDATA[#[{locationId: attributes.uriParams.locationId as Number}]]]></db:input-parameters>
+  </db:select>
+  <ee:transform>
+    <ee:message>
+      <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+if (isEmpty(payload))
+  {error: "Location not found", locationId: attributes.uriParams.locationId}
+else payload[0]]]></ee:set-payload>
+    </ee:message>
+  </ee:transform>
+</flow>
+
 <flow name="get:\users\(userId):system_api_database-config">
 <ee:transform doc:name="Transform Message">
 <ee:variables>
@@ -488,18 +519,18 @@ output application/java
 ]]></ee:set-payload>
 </ee:message>
 </ee:transform>
-		<set-variable value="#[payload]" doc:name="Set Variable" doc:id="e7accc11-7891-4944-bb18-b9c06b4680ff" variableName="favoriteRequest" />
-		<db:select doc:name="user exists" doc:id="318dee19-f3c1-4288-98e0-41fd92ca6e5d" config-ref="Database_Config">
+		<set-variable value="#[payload]" doc:name="Set Variable" doc:id="93c60a04-6811-4b0f-ae22-31ff0a2eec9a" variableName="favoriteRequest" />
+		<db:select doc:name="user exists" doc:id="e74371ea-059e-4184-9188-428022f1ecde" config-ref="Database_Config">
 			<db:sql><![CDATA[SELECT 1
 FROM favorites
 WHERE userid = :userid
   AND locationid = :locationid;]]></db:sql>
 			<db:input-parameters><![CDATA[#[payload]]]></db:input-parameters>
 		</db:select>
-		<choice doc:name="Choice" doc:id="cae0b273-dd57-422e-b82d-26c9542ba0c2">
+		<choice doc:name="Choice" doc:id="e514c0dc-0d66-4950-90dc-8ffab4ab6662">
 			<when expression="#[!isEmpty(payload)]">
-				<set-variable value="409" doc:name="Set Variable" doc:id="737379f9-dc2c-42d5-bb89-b91ba66e8ecf" variableName="httpStatus" />
-				<ee:transform doc:name="Transform Message" doc:id="172b234b-1e71-453e-9372-c3d37e462168">
+				<set-variable value="409" doc:name="Set Variable" doc:id="1a22b69f-ed0c-424a-b21a-788785eb939a" variableName="httpStatus" />
+				<ee:transform doc:name="Transform Message" doc:id="cf27c372-40d6-49ff-93f8-2015fe245c7a">
 					<ee:message>
 						<ee:set-payload><![CDATA[%dw 2.0
 output application/json
@@ -513,14 +544,14 @@ output application/json
 				</ee:transform>
 			</when>
 			<otherwise>
-				<db:insert doc:name="Insert" doc:id="c8f89b7a-a58f-4a58-8960-44bbd3248706" config-ref="Database_Config">
+				<db:insert doc:name="Insert" doc:id="b4bdc51b-6eba-4fe1-bcaa-4b10deffdd8d" config-ref="Database_Config">
 			<db:sql><![CDATA[INSERT INTO favorites (userid, locationid)
 VALUES (:userid, :locationid);
 ]]></db:sql>
 			<db:input-parameters><![CDATA[#[vars.favoriteRequest]]]></db:input-parameters>
 		</db:insert>
-				<set-variable value="201" doc:name="Set Variable" doc:id="2cfa1308-17ad-481c-becb-65f9daea5fa3" variableName="httpStatus" />
-				<ee:transform doc:name="Transform Message" doc:id="bd9e1830-2c3c-448b-8ce2-7f63b12ff6d1">
+				<set-variable value="201" doc:name="Set Variable" doc:id="fb529309-0239-4127-a5e1-f6d6c71f3e71" variableName="httpStatus" />
+				<ee:transform doc:name="Transform Message" doc:id="b9f0d03e-6b3a-421b-8c84-6bf8d4ba12a7">
 			<ee:message>
 				<ee:set-payload><![CDATA[%dw 2.0
 output application/json
@@ -611,91 +642,220 @@ output application/java
   </choice>
 </flow>
 
-
-
-
 <flow name="post:\itineraries:application\json:system_api_database-config">
-<ee:transform doc:name="Transform Message">
-<ee:message>
-<ee:set-payload><![CDATA[%dw 2.0
-output application/json
+<ee:transform doc:name="Transform to DB Params">
+        <ee:message>
+            <ee:set-payload><![CDATA[%dw 2.0
+output application/java
 ---
 {
-id: 1,
-user_id: 42,
-name: "3 Dias em São Miguel",
-start_date: "2025-12-01",
-end_date: "2025-12-03",
-locations: [
-{
-location_id: 1,
-position: 1
-},
-{
-location_id: 5,
-position: 2
-},
-{
-location_id: 12,
-position: 3
-}
-],
-created_at: "2025-11-15T10:00:00Z"
-} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
-</ee:message>
-</ee:transform>
+  userid: payload.userid as Number,
+  name: payload.name,
+  startdate: payload.startdate,
+  enddate: payload.enddate
+}]]></ee:set-payload>
+        </ee:message>
+    </ee:transform>
+
+    <set-variable variableName="itineraryRequest" value="#[payload]" />
+    <db:select doc:name="Check User Exists" config-ref="Database_Config">
+        <db:sql><![CDATA[
+SELECT 1 FROM users WHERE id = :userid
+]]></db:sql>
+        <db:input-parameters><![CDATA[#[{ userid: vars.itineraryRequest.userid }]]]></db:input-parameters>
+    </db:select>
+
+    <choice doc:name="Validate User">
+        <when expression="#[isEmpty(payload)]">
+            <ee:transform>
+                <ee:message>
+                    <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{ error: "User not found", userId: vars.itineraryRequest.userid }]]></ee:set-payload>
+                </ee:message>
+                <ee:variables>
+                    <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                </ee:variables>
+            </ee:transform>
+        </when>
+
+        <otherwise>
+        <db:insert doc:name="Insert Itinerary" config-ref="Database_Config">
+                <db:sql><![CDATA[
+INSERT INTO itineraries (userid, name, startdate, enddate)
+VALUES (:userid, :name, :startdate, :enddate)
+]]></db:sql>
+                <db:input-parameters><![CDATA[#[vars.itineraryRequest]]]></db:input-parameters>
+            </db:insert>
+            <db:select doc:name="Select Created Itinerary" config-ref="Database_Config">
+                <db:sql><![CDATA[
+SELECT id, userid, name, startdate, enddate, created_at, updated_at
+FROM itineraries
+WHERE id = LAST_INSERT_ID()
+]]></db:sql>
+            </db:select>
+
+            <ee:transform doc:name="Success Response">
+                <ee:message>
+                    <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload[0] ]]></ee:set-payload>
+                </ee:message>
+                <ee:variables>
+                    <ee:set-variable variableName="httpStatus">201</ee:set-variable>
+                </ee:variables>
+            </ee:transform>
+
+        </otherwise>
+    </choice>
+
 </flow>
+
 <flow name="post:\users\login:application\json:system_api_database-config">
-<ee:transform doc:name="Transform Message">
-<ee:message>
-<ee:set-payload><![CDATA[%dw 2.0
+  <db:select config-ref="Database_Config">
+    <db:sql><![CDATA[
+SELECT id, name, email, role
+FROM users
+WHERE email = :email AND password = :password
+]]></db:sql>
+    <db:input-parameters><![CDATA[#[payload]]]></db:input-parameters>
+  </db:select>
+
+  <ee:transform>
+    <ee:message>
+      <ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
-{
-token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-expiresIn: 86400,
-user: {
-id: 42,
-name: "João Silva",
-email: "joao@example.com"
-}
-} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
-</ee:message>
-</ee:transform>
+if (isEmpty(payload))
+  { error: "Invalid credentials" }
+else payload[0]]]></ee:set-payload>
+    </ee:message>
+  </ee:transform>
 </flow>
+
 <flow name="post:\ratings:application\json:system_api_database-config">
-<ee:transform doc:name="Transform Message">
-<ee:message>
-<ee:set-payload><![CDATA[%dw 2.0
-output application/json
+<ee:transform doc:name="Transform to DB Params">
+        <ee:message>
+            <ee:set-payload><![CDATA[%dw 2.0
+output application/java
 ---
 {
-id: 1001,
-location_id: 1,
-user_id: 42,
-rating: 5,
-comment: "Lugar incrível!",
-created_at: "2025-11-10T15:00:00Z"
-} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
-</ee:message>
-</ee:transform>
+  locationid: payload.locationid as Number,
+  userid: payload.userid as Number,
+  rating: payload.rating as Number,
+  comment: payload.comment default null
+}]]></ee:set-payload>
+        </ee:message>
+    </ee:transform>
+
+    <set-variable variableName="ratingRequest" value="#[payload]" />
+    <db:select doc:name="Check User Exists" config-ref="Database_Config">
+        <db:sql><![CDATA[
+SELECT 1 FROM users WHERE id = :userid
+]]></db:sql>
+        <db:input-parameters><![CDATA[#[{ userid: vars.ratingRequest.userid }]]]></db:input-parameters>
+    </db:select>
+
+    <choice doc:name="Validate User">
+        <when expression="#[isEmpty(payload)]">
+            <ee:transform>
+                <ee:message>
+                    <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{ error: "User not found", userId: vars.ratingRequest.userid }]]></ee:set-payload>
+                </ee:message>
+                <ee:variables>
+                    <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                </ee:variables>
+            </ee:transform>
+        </when>
+
+        <otherwise>
+        <db:select doc:name="Check Location Exists" config-ref="Database_Config">
+                <db:sql><![CDATA[
+SELECT 1 FROM locations WHERE id = :locationid
+]]></db:sql>
+                <db:input-parameters><![CDATA[#[{ locationid: vars.ratingRequest.locationid }]]]></db:input-parameters>
+            </db:select>
+
+            <choice doc:name="Validate Location">
+                <when expression="#[isEmpty(payload)]">
+                    <ee:transform>
+                        <ee:message>
+                            <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{ error: "Location not found", locationId: vars.ratingRequest.locationid }]]></ee:set-payload>
+                        </ee:message>
+                        <ee:variables>
+                            <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                        </ee:variables>
+                    </ee:transform>
+                </when>
+
+                <otherwise>
+                <db:insert doc:name="Insert Rating" config-ref="Database_Config">
+                        <db:sql><![CDATA[
+INSERT INTO ratings (locationid, userid, rating, comment)
+VALUES (:locationid, :userid, :rating, :comment)
+]]></db:sql>
+                        <db:input-parameters><![CDATA[#[vars.ratingRequest]]]></db:input-parameters>
+                    </db:insert>
+                    <db:select doc:name="Select Created Rating" config-ref="Database_Config">
+                        <db:sql><![CDATA[
+SELECT id, locationid, userid, rating, comment, created_at
+FROM ratings
+WHERE id = LAST_INSERT_ID()
+]]></db:sql>
+                    </db:select>
+
+                    <ee:transform doc:name="Success Response">
+                        <ee:message>
+                            <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload[0] ]]></ee:set-payload>
+                        </ee:message>
+                        <ee:variables>
+                            <ee:set-variable variableName="httpStatus">201</ee:set-variable>
+                        </ee:variables>
+                    </ee:transform>
+
+                </otherwise>
+            </choice>
+
+        </otherwise>
+    </choice>
+
 </flow>
+
 <flow name="post:\users:application\json:system_api_database-config">
-<ee:transform doc:name="Transform Message">
-<ee:message>
-<ee:set-payload><![CDATA[%dw 2.0
+  <db:insert config-ref="Database_Config">
+    <db:sql><![CDATA[
+INSERT INTO users (name, email, password, role)
+VALUES (:name, :email, :password, 'user')
+]]></db:sql>
+    <db:input-parameters><![CDATA[#[payload]]]></db:input-parameters>
+  </db:insert>
+
+  <db:select config-ref="Database_Config">
+    <db:sql><![CDATA[
+SELECT id, name, email, role FROM users WHERE email = :email
+]]></db:sql>
+    <db:input-parameters><![CDATA[#[{email: payload.email}]]]></db:input-parameters>
+  </db:select>
+
+  <ee:transform>
+    <ee:message>
+      <ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
-{
-token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-expiresIn: 86400,
-user: {
-id: 42,
-name: "João Silva",
-email: "joao@example.com"
-}
-} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
-</ee:message>
-</ee:transform>
+payload[0]]]></ee:set-payload>
+    </ee:message>
+  </ee:transform>
 </flow>
+
 </mule>
