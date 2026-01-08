@@ -552,19 +552,16 @@ export async function exportItineraryPDF(itineraryId) {
 
     const itinerary = STATE.itineraries.find(i => String(i.id) === String(itineraryId));
     
-    console.log('=== PDF EXPORT DEBUG ===');
-    console.log('Looking for itinerary ID:', itineraryId);
-    console.log('Found itinerary:', itinerary);
-    console.log('LocationIds:', itinerary?.locationIds);
-    console.log('STATE.itineraries:', STATE.itineraries);
-    console.log('=== END PDF DEBUG ===');
-    
     if (!itinerary) {
         showToast('Itinerário não encontrado.', 'error');
         return;
     }
 
-    // Verificar se a biblioteca jsPDF foi carregada
+    if (!itinerary.locationIds || itinerary.locationIds.length === 0) {
+        showToast('Este itinerário não tem locais associados.', 'warning');
+        return;
+    }
+
     const { jsPDF } = window.jspdf;
     if (!jsPDF) {
         showToast('Erro ao carregar biblioteca de PDF.', 'error');
@@ -575,7 +572,7 @@ export async function exportItineraryPDF(itineraryId) {
 
     // Cabeçalho
     doc.setFontSize(20);
-    doc.setTextColor(14, 165, 233); // Cor primária (azul)
+    doc.setTextColor(14, 165, 233);
     doc.text("Azores Uncharted", 105, 20, null, null, "center");
 
     doc.setFontSize(16);
@@ -589,10 +586,74 @@ export async function exportItineraryPDF(itineraryId) {
         : 'Data: Não definida';
     doc.text(dateText, 20, 50);
 
-    doc.line(20, 55, 190, 55); // Linha separadora
+    doc.line(20, 55, 190, 55);
+
+    // ✅ CREATE MAP WITH MARKERS
+    let yPos = 70;
+    
+    // Create a temporary map container
+    const mapContainer = document.createElement('div');
+    mapContainer.id = 'tempMapForPDF';
+    mapContainer.style.width = '800px';
+    mapContainer.style.height = '400px';
+    mapContainer.style.position = 'absolute';
+    mapContainer.style.left = '-9999px';
+    document.body.appendChild(mapContainer);
+
+    try {
+        // Initialize map
+        const tempMap = L.map('tempMapForPDF', {
+            zoomControl: false,
+            attributionControl: false
+        });
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(tempMap);
+
+        const latLngs = [];
+
+        // Add markers for each location
+        itinerary.locationIds.forEach((locId, index) => {
+            const loc = resolveLocationById(locId);
+            if (loc && loc.lat && loc.lon) {
+                const point = [loc.lat, loc.lon];
+                latLngs.push(point);
+
+                L.marker(point).addTo(tempMap).bindPopup(`${index + 1}. ${loc.name}`);
+            }
+        });
+
+        // Fit map to markers
+        if (latLngs.length > 0) {
+            const bounds = L.latLngBounds(latLngs);
+            tempMap.fitBounds(bounds, { padding: [50, 50] });
+        }
+
+        // Wait for tiles to load
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Capture map as image using html2canvas
+        const canvas = await html2canvas(mapContainer, {
+            useCORS: true,
+            allowTaint: true,
+            logging: false
+        });
+
+        const mapImage = canvas.toDataURL('image/png');
+
+        // Add map to PDF
+        doc.addImage(mapImage, 'PNG', 20, yPos, 170, 85);
+        yPos += 95;
+
+        // Cleanup
+        tempMap.remove();
+        document.body.removeChild(mapContainer);
+
+    } catch (err) {
+        console.warn('Failed to add map to PDF:', err);
+        document.body.removeChild(mapContainer);
+    }
 
     // Listar Locais
-    let yPos = 70;
     doc.setFontSize(14);
     doc.setTextColor(0);
     doc.text("Locais a visitar:", 20, yPos);
@@ -600,39 +661,31 @@ export async function exportItineraryPDF(itineraryId) {
 
     doc.setFontSize(12);
 
-    if (itinerary.locationIds && itinerary.locationIds.length > 0) {
-        itinerary.locationIds.forEach((locId, index) => {
-            const loc = resolveLocationById(locId);
-            const locName = loc ? loc.name : `Local #${locId}`;
-            const locIsland = loc ? loc.island : '';
+    itinerary.locationIds.forEach((locId, index) => {
+        const loc = resolveLocationById(locId);
+        const locName = loc ? loc.name : `Local #${locId}`;
+        const locIsland = loc ? loc.island : '';
 
-            doc.text(`${index + 1}. ${locName} (${locIsland})`, 25, yPos);
-            yPos += 10;
+        doc.text(`${index + 1}. ${locName} (${locIsland})`, 25, yPos);
+        yPos += 10;
 
-            // Se a página encher, criar nova
-            if (yPos > 270) {
-                doc.addPage();
-                yPos = 20;
-            }
-        });
-    } else {
-        doc.text("Sem locais definidos.", 25, yPos);
-    }
+        if (yPos > 270) {
+            doc.addPage();
+            yPos = 20;
+        }
+    });
 
     // Rodapé
     doc.setFontSize(10);
     doc.setTextColor(150);
     doc.text("Gerado por Azores Uncharted", 105, 290, null, null, "center");
 
-    // Guardar ficheiro
+    // Save
     const safeName = itinerary.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
     doc.save(`itinerario_${safeName}.pdf`);
 
     showToast('Download do PDF iniciado!', 'success');
 }
-
-// Tornar a função global para ser usada no onclick do HTML injetado
-window.exportItineraryPDF = exportItineraryPDF;
 
 // ----------------------------------------
 // Renderização: Ilhas e Locais
@@ -1096,12 +1149,10 @@ export async function loadFavorites() {
 export async function loadItineraries() {
     if (!STATE.token || !STATE.currentUser?.id) return;
     try {
-        // ✅ FIX: Pass userId as query parameter
         const resp = await apiGet(`/itineraries?userId=${STATE.currentUser.id}`).catch(() => null);
         
-        console.log('Loaded itineraries response:', resp);  // ✅ DEBUG
+        console.log('Loaded itineraries response:', resp);
         
-        // Handle different response formats
         let list = [];
         if (Array.isArray(resp)) {
             list = resp;
@@ -1111,9 +1162,27 @@ export async function loadItineraries() {
             list = resp.itineraries;
         }
         
-        STATE.itineraries = list.map(normalizeItinerary);
+        // ✅ FIX: Load locationIds from localStorage for each itinerary
+        STATE.itineraries = list.map(it => {
+            const normalized = normalizeItinerary(it);
+            
+            // Try to load locationIds from localStorage
+            const storageKey = `itinerary_${normalized.id}_locations`;
+            const savedLocations = localStorage.getItem(storageKey);
+            
+            if (savedLocations) {
+                try {
+                    normalized.locationIds = JSON.parse(savedLocations);
+                    console.log(`Loaded locationIds from localStorage for itinerary ${normalized.id}:`, normalized.locationIds);
+                } catch (err) {
+                    console.warn('Failed to parse saved locationIds:', err);
+                }
+            }
+            
+            return normalized;
+        });
         
-        console.log('Normalized itineraries:', STATE.itineraries);  // ✅ DEBUG
+        console.log('Normalized itineraries with locationIds:', STATE.itineraries);
     } catch (err) {
         console.info('Itineraries endpoint not available yet');
         STATE.itineraries = [];
@@ -1596,27 +1665,40 @@ export async function saveItinerary(e) {
         return;
     }
 
-    // ✅ TRY ALL POSSIBLE FIELD NAME VARIATIONS
     const payload = {
-    userId: STATE.currentUser?.id,  // ✅ camelCase
-    name: name,
-    startDate: startDate,           // ✅ camelCase
-    endDate: endDate,               // ✅ camelCase
-    locationIds: locationIds.join(',')  // ✅ camelCase (won't work yet, but correct format)
-};
+        userId: STATE.currentUser?.id,
+        name: name,
+        startDate: startDate,
+        endDate: endDate,
+        locationIds: locationIds.join(',')
+    };
 
     console.log('Saving itinerary with payload:', payload);
 
     try {
-    const created = await apiPost('/profile/itineraries', payload);
-    
-    // ✅ Instead of adding to STATE.itineraries, reload from server
-    await loadItineraries();
-    
-    clearCurrentItinerary();
-    renderItinerariesSection();
-    renderItinerariesInProfile();
-    showToast('Itinerário guardado com sucesso.', 'success');
+        await apiPost('/profile/itineraries', payload);
+        
+        // ✅ FIX: Small delay to ensure database write completes
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Reload itineraries from database
+        await loadItineraries();
+        
+        // Find the newly created itinerary
+        const newItinerary = STATE.itineraries
+            .filter(it => it.name === name && it.startDate === startDate && it.endDate === endDate)
+            .sort((a, b) => b.id - a.id)[0]; // Get the most recent one
+        
+        if (newItinerary) {
+            const storageKey = `itinerary_${newItinerary.id}_locations`;
+            localStorage.setItem(storageKey, JSON.stringify(locationIds));
+            console.log(`✅ Saved locationIds for itinerary ${newItinerary.id}:`, locationIds);
+        }
+        
+        clearCurrentItinerary();
+        renderItinerariesSection();
+        renderItinerariesInProfile();
+        showToast('Itinerário guardado com sucesso.', 'success');
     } catch (err) {
         console.warn('Erro ao guardar itinerário', err);
         showToast('Não foi possível guardar o itinerário.', 'error');

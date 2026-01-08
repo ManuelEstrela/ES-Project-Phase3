@@ -51,6 +51,7 @@ window.toggleEditProfile = toggleEditProfile;
 window.saveProfile = saveProfile;
 window.saveItinerary = ui.saveItinerary;
 window.optimizeItinerary = optimizeItinerary; // NOVO EXPORT
+window.exportItineraryPDF = ui.exportItineraryPDF;
 
 // Expor funções usadas em atributos onclick/onsubmit no HTML
 window.showSection = showSection;
