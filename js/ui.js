@@ -1022,11 +1022,39 @@ export async function loadProfile() {
 export async function loadFavorites() {
     if (!STATE.token || !STATE.currentUser?.id) return;
     try {
-        // ✅ FIX: Pass userId as query parameter
         const favs = await apiGet(`/favorites?userId=${STATE.currentUser.id}`).catch(() => []);
-        if (Array.isArray(favs)) {
-            STATE.favorites = favs.map(normalizeLocationCard);
+        
+        console.log('Raw favorites response:', favs);
+        
+        if (!Array.isArray(favs) || favs.length === 0) {
+            STATE.favorites = [];
+            return;
         }
+        
+        // ✅ Store both favorite ID and location ID
+        const favoritesWithDetails = [];
+        
+        for (const fav of favs) {
+            const locationId = fav.locationid || fav.locationId;
+            const favoriteId = fav.id; // ✅ This is the favorite record ID
+            
+            try {
+                const locationDetail = await apiGet(`/locations/${locationId}`);
+                const normalized = normalizeLocationCard(locationDetail);
+                
+                // ✅ Add favoriteId to the location object
+                normalized.favoriteId = favoriteId;
+                
+                favoritesWithDetails.push(normalized);
+            } catch (err) {
+                console.warn(`Failed to load details for location ${locationId}`, err);
+            }
+        }
+        
+        STATE.favorites = favoritesWithDetails;
+        
+        console.log('Favorites with full details:', STATE.favorites);
+        
     } catch (err) {
         console.info('Favorites endpoint not available yet');
         STATE.favorites = [];
@@ -1073,19 +1101,56 @@ export function filterByIsland(islandName) {
 export async function filterLocations() {
     const islandVal = document.getElementById('islandFilter')?.value || '';
     const categoryVal = document.getElementById('categoryFilter')?.value || '';
-
-    await loadLocations({
-        island: islandVal || undefined,
-        category: categoryVal || undefined
-    });
+    
+    // ✅ CLIENT-SIDE FILTERING instead of API call
+    let filteredLocations = [...STATE.locations]; // Copy all locations
+    
+    // Filter by island
+    if (islandVal && islandVal !== '') {
+        filteredLocations = filteredLocations.filter(loc => 
+            loc.island === islandVal
+        );
+    }
+    
+    // Filter by category
+    if (categoryVal && categoryVal !== '') {
+        filteredLocations = filteredLocations.filter(loc => 
+            loc.category === categoryVal
+        );
+    }
+    
+    console.log('Filtered locations:', filteredLocations);
+    
+    // Render filtered results
+    const container = document.getElementById('allLocations');
+    renderLocations(container, filteredLocations);
 }
 
 export async function searchLocations() {
     const query = document.getElementById('searchInput')?.value.trim().toLowerCase() || '';
-    await loadLocations({
-        search: query || undefined
+    
+    if (!query) {
+        // No search query, show all
+        const container = document.getElementById('allLocations');
+        renderLocations(container, STATE.locations);
+        return;
+    }
+    
+    // ✅ CLIENT-SIDE SEARCH
+    const filteredLocations = STATE.locations.filter(loc => {
+        const nameMatch = loc.name.toLowerCase().includes(query);
+        const descMatch = (loc.description || '').toLowerCase().includes(query);
+        const islandMatch = (loc.island || '').toLowerCase().includes(query);
+        const categoryMatch = (loc.category || '').toLowerCase().includes(query);
+        
+        return nameMatch || descMatch || islandMatch || categoryMatch;
     });
+    
+    console.log('Search results:', filteredLocations);
+    
     showSection('locations');
+    const container = document.getElementById('allLocations');
+    renderLocations(container, filteredLocations);
 }
 
 // ----------------------------------------
@@ -1359,12 +1424,25 @@ export async function toggleFavorite(e, locationId) {
 
     try {
         if (alreadyFav) {
-            await apiRequest(`/favorites/${locationId}`, {
+            // ✅ FIX: Find the favorite ID, not location ID
+            const favorite = STATE.favorites.find(f => String(f.id) === String(locationId));
+            
+            if (!favorite) {
+                showToast('Favorito não encontrado.', 'error');
+                return;
+            }
+            
+            // Get the actual favorite ID from the raw favorites response
+            // We need to store this when loading favorites
+            const favoriteId = favorite.favoriteId || favorite.id;
+            
+            console.log('Removing favorite:', favoriteId);
+            
+            await apiRequest(`/favorites/${favoriteId}`, {
                 method: 'DELETE'
             });
             showToast('Removido dos favoritos.', 'info');
         } else {
-            // ✅ FIX: Use lowercase to match database API
             await apiPost('/favorites', { 
                 userid: STATE.currentUser?.id,
                 locationid: locationId 

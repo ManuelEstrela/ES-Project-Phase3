@@ -140,26 +140,32 @@ export function normalizeIsland(apiIsland) {
 
 export function normalizeLocationCard(apiLoc) {
     if (!apiLoc) return null;
+    
+    // Get image URL
+    let imageUrl = apiLoc.imageUrl || apiLoc.image || apiLoc.imageurl || '';
+    
+    // Replace example.com URLs or empty URLs with Picsum
+    if (!imageUrl || 
+        imageUrl.trim() === '' || 
+        imageUrl.includes('example.com') ||
+        imageUrl.includes('placeholder')) {
+        
+        // ✅ Use Picsum instead of Unsplash (Unsplash Source was deprecated)
+        // Each location ID gets a different random image
+        imageUrl = `https://picsum.photos/600/400?random=${apiLoc.id}`;
+    }
+    
     return {
         id: apiLoc.id,
         name: apiLoc.name || '',
         island: apiLoc.island || apiLoc.islandName || '',
         category: apiLoc.category || apiLoc.categoryName || '',
         description: apiLoc.description || '',
-        image: apiLoc.imageUrl || apiLoc.image || apiLoc.imageurl || '',
+        image: imageUrl,
         lat: apiLoc.latitude ?? apiLoc.lat ?? null,
         lon: apiLoc.longitude ?? apiLoc.lon ?? null,
-        rating:
-            apiLoc.rating ??
-            apiLoc.averageRating ??
-            (apiLoc.ratings && apiLoc.ratings.average) ??
-            null,
-        ratingCount:
-            apiLoc.ratingCount ??
-            apiLoc.totalRatings ??
-            apiLoc.numberOfRatings ??
-            (apiLoc.ratings && apiLoc.ratings.count) ??
-            0
+        rating: apiLoc.rating ?? apiLoc.averageRating ?? null,
+        ratingCount: apiLoc.ratingCount ?? apiLoc.totalRatings ?? 0
     };
 }
 

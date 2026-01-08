@@ -50,14 +50,15 @@
         <h1>Descubra os Açores</h1>
         <p>Explore as maravilhas naturais de nove ilhas únicas</p>
         <div class="search-bar">
-            <input
-                    type="text"
-                    id="searchInput"
-                    placeholder="Pesquisar locais, ilhas, categorias..."
-                    onkeyup="searchLocations()"
-                    aria-label="Pesquisar locais turísticos"
-            >
-            <button class="btn btn-primary" onclick="searchLocations()">Pesquisar</button>
+            <input 
+                type="text" 
+                id="searchInput" 
+                placeholder="Pesquisar locais..." 
+                onkeydown="if(event.key === 'Enter') searchLocations()"
+            />
+            <button onclick="searchLocations()" class="btn btn-primary">
+                🔍 Pesquisar
+            </button>
         </div>
     </div>
 </section>
@@ -88,14 +89,15 @@
             <select class="filter-select" id="islandFilter" onchange="filterLocations()" aria-label="Filtrar por Ilha">
                 <option value="">Todas as Ilhas</option>
             </select>
-            <select class="filter-select" id="categoryFilter" onchange="filterLocations()" aria-label="Filtrar por Categoria">
+            <select id="categoryFilter" onchange="filterLocations()" class="filter-select">
                 <option value="">Todas as Categorias</option>
-                <option value="Miradouro">Miradouro</option>
-                <option value="Lagoa">Lagoa</option>
-                <option value="Termas">Termas</option>
-                <option value="Cascata">Cascata</option>
-                <option value="Praia">Praia</option>
-                <option value="Cidade">Cidade</option>
+                <option value="Nature">Nature</option>
+                <option value="Hot Springs">Hot Springs</option>
+                <option value="Volcano">Volcano</option>
+                <option value="Cave">Cave</option>
+                <option value="Waterfall">Waterfall</option>
+                <option value="Village">Village</option>
+                <option value="Beach">Beach</option>
             </select>
         </div>
         <div class="locations-grid" id="allLocations"></div>
