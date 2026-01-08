@@ -996,7 +996,39 @@ export async function loadLocations(params = {}) {
 
         const locations = await apiGet(path);
         if (Array.isArray(locations)) {
-            STATE.locations = locations.map(normalizeLocationCard);
+            // ✅ For each location, fetch ratings and calculate average
+            const locationsWithRatings = await Promise.all(
+                locations.map(async (loc) => {
+                    try {
+                        const ratings = await apiGet(`/ratings?locationId=${loc.id}`);
+                        const ratingsList = Array.isArray(ratings) ? ratings : [];
+                        
+                        let avgRating = null;
+                        let ratingCount = 0;
+                        
+                        if (ratingsList.length > 0) {
+                            const sum = ratingsList.reduce((acc, r) => acc + (r.rating || 0), 0);
+                            avgRating = sum / ratingsList.length;
+                            ratingCount = ratingsList.length;
+                        }
+                        
+                        return {
+                            ...normalizeLocationCard(loc),
+                            rating: avgRating,
+                            ratingCount: ratingCount
+                        };
+                    } catch (err) {
+                        // If ratings fetch fails, return location without ratings
+                        return {
+                            ...normalizeLocationCard(loc),
+                            rating: null,
+                            ratingCount: 0
+                        };
+                    }
+                })
+            );
+            
+            STATE.locations = locationsWithRatings;
 
             if (!params.island && !params.category && !params.search) {
                 const popularContainer = document.getElementById('popularLocations');
