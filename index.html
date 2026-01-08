@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Descubra os Açores - Plataforma de Turismo">
+    <meta name="author" content="Group 2">
+    <title>Azores Uncharted - Explore o Paraíso</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="css/styles.css">
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+</head>
+<body>
+
+<header>
+    <nav>
+        <div class="logo" onclick="showSection('home')">🏝️ Azores Uncharted</div>
+        <ul class="nav-links">
+            <li><a onclick="showSection('home')">Início</a></li>
+            <li><a onclick="showSection('islands')">Ilhas</a></li>
+            <li><a onclick="showSection('locations')">Locais</a></li>
+            <li><a onclick="showSection('itineraries')">Itinerários</a></li>
+            <li><a onclick="showSection('favorites')">Favoritos</a></li>
+            <li id="adminNavItem" class="nav-item hidden">
+                <button class="nav-link" data-section="admin" onclick="openAdminPanel()">
+                    <span class="nav-icon">⚙️</span>
+                    <span>Painel Admin</span>
+                </button>
+            </li>
+        </ul>
+        <div class="auth-buttons" id="authButtons">
+            <button class="btn btn-outline" onclick="openModal('login')">Entrar</button>
+            <button class="btn btn-primary" onclick="openModal('register')">Registar</button>
+        </div>
+        <div class="user-menu hidden" id="userMenu">
+            <div class="user-avatar" onclick="showSection('profile')">
+                <span id="userInitial">U</span>
+            </div>
+        </div>
+    </nav>
+</header>
+
+<section class="hero" id="heroSection">
+    <div class="hero-content">
+        <h1>Descubra os Açores</h1>
+        <p>Explore as maravilhas naturais de nove ilhas únicas</p>
+        <div class="search-bar">
+            <input
+                    type="text"
+                    id="searchInput"
+                    placeholder="Pesquisar locais, ilhas, categorias..."
+                    onkeyup="searchLocations()"
+                    aria-label="Pesquisar locais turísticos"
+            >
+            <button class="btn btn-primary" onclick="searchLocations()">Pesquisar</button>
+        </div>
+    </div>
+</section>
+
+<div id="toastContainer" class="toast-container"></div>
+
+<div class="container">
+
+    <section id="homeSection">
+        <div id="homeAlertsContainer"></div>
+
+        <h2 class="section-title">Ilhas em Destaque</h2>
+        <div class="islands-grid" id="islandsGrid"></div>
+
+        <h2 class="section-title">Locais Populares</h2>
+        <div class="locations-grid" id="popularLocations"></div>
+    </section>
+
+    <section id="islandsSection" class="hidden">
+        <h2 class="section-title">Todas as Ilhas</h2>
+        <p class="section-subtitle">Selecione uma ilha para ver os melhores pontos turísticos.</p>
+        <div class="islands-grid" id="allIslandsGrid"></div>
+    </section>
+
+    <section id="locationsSection" class="hidden">
+        <h2 class="section-title">Pontos Turísticos</h2>
+        <div class="filters">
+            <select class="filter-select" id="islandFilter" onchange="filterLocations()" aria-label="Filtrar por Ilha">
+                <option value="">Todas as Ilhas</option>
+            </select>
+            <select class="filter-select" id="categoryFilter" onchange="filterLocations()" aria-label="Filtrar por Categoria">
+                <option value="">Todas as Categorias</option>
+                <option value="Miradouro">Miradouro</option>
+                <option value="Lagoa">Lagoa</option>
+                <option value="Termas">Termas</option>
+                <option value="Cascata">Cascata</option>
+                <option value="Praia">Praia</option>
+                <option value="Cidade">Cidade</option>
+            </select>
+        </div>
+        <div class="locations-grid" id="allLocations"></div>
+    </section>
+
+    <section id="itinerariesSection" class="hidden">
+        <h2 class="section-title">Itinerários</h2>
+        <p class="section-subtitle">Planeie viagens personalizadas com os seus pontos turísticos favoritos.</p>
+
+        <div class="itinerary-layout">
+            <div class="itinerary-card">
+                <h3>Planear nova viagem</h3>
+                <form id="itineraryForm" onsubmit="saveItinerary(event)">
+                    <div class="form-group">
+                        <label for="itineraryName">Nome do itinerário *</label>
+                        <input type="text" id="itineraryName" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="itineraryStart">Data de início</label>
+                            <input type="date" id="itineraryStart">
+                        </div>
+                        <div class="form-group">
+                            <label for="itineraryEnd">Data de fim</label>
+                            <input type="date" id="itineraryEnd">
+                        </div>
+                    </div>
+
+                    <div id="itineraryMap" class="location-map" style="height: 300px; margin-bottom: 1rem; border-radius: 12px; display: none;"></div>
+
+                    <p class="muted">
+                        Adicione pontos ao itinerário através do botão
+                        <strong>“Adicionar ao itinerário”</strong> em cada local.
+                    </p>
+                    <div id="currentItineraryPoints" class="itinerary-points-list"></div>
+                    <div class="itinerary-actions">
+                        <button type="button" class="btn btn-outline" onclick="clearCurrentItinerary()">
+                            Limpar
+                        </button>
+                        <button type="button" class="btn btn-outline" onclick="optimizeItinerary()" title="Reordenar pontos por distância">
+                            ⚡ Otimizar
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            Guardar itinerário
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="itinerary-card">
+                <h3>Os meus itinerários</h3>
+                <div id="itinerariesList" class="itineraries-list">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="adminSection" class="hidden">
+        <div class="section-header admin-header">
+            <div class="admin-header-title">
+                <span class="admin-tag">Área reservada</span>
+                <h2 class="section-title">Painel do Administrador</h2>
+                <p class="section-subtitle">
+                    Gerir conteúdos turísticos, utilizadores da plataforma e monitorizar as integrações com os serviços externos.
+                </p>
+            </div>
+            <div class="admin-header-chip">
+                <span class="badge badge-outline">Azores Uncharted • Gestão</span>
+            </div>
+        </div>
+
+        <div class="admin-grid">
+            <div class="admin-column">
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h3>Gerir Conteúdos</h3>
+                        <p class="admin-card-subtitle">
+                            UC-13, UC-14, UC-15, UC-16, UC-17 — Criar, editar, listar e remover pontos turísticos.
+                        </p>
+                    </div>
+
+                    <form id="adminLocationForm" class="admin-form" onsubmit="submitAdminLocation(event)">
+                        <input type="hidden" id="adminLocationId">
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="adminLocationName">Nome do ponto turístico *</label>
+                                <input type="text" id="adminLocationName" required placeholder="Ex.: Lagoa das Sete Cidades">
+                            </div>
+                            <div class="form-group">
+                                <label for="adminLocationIsland">Ilha *</label>
+                                <input type="text" id="adminLocationIsland" required placeholder="Ex.: São Miguel">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="adminLocationCategory">Categoria</label>
+                                <input type="text" id="adminLocationCategory" placeholder="Ex.: Miradouro, Lagoa, Termas…">
+                            </div>
+                            <div class="form-group">
+                                <label for="adminLocationImage">Imagem (URL)</label>
+                                <input type="url" id="adminLocationImage" placeholder="https://">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="adminLocationDescription">Descrição</label>
+                            <textarea id="adminLocationDescription" rows="2" placeholder="Breve descrição do ponto turístico."></textarea>
+                        </div>
+
+                        <div class="admin-form-actions">
+                            <button type="submit" class="btn btn-primary" id="adminLocationSaveBtn">
+                                Criar ponto turístico
+                            </button>
+                            <button type="button"
+                                    class="btn btn-outline hidden"
+                                    id="adminLocationCancelEditBtn"
+                                    onclick="cancelAdminLocationEdit()">
+                                Cancelar edição
+                            </button>
+                        </div>
+                    </form>
+
+                    <div class="table-wrapper">
+                        <table class="admin-table">
+                            <thead>
+                            <tr>
+                                <th scope="col">ID</th>
+                                <th scope="col">Nome</th>
+                                <th scope="col">Ilha</th>
+                                <th scope="col">Categoria</th>
+                                <th scope="col">Ações</th>
+                            </tr>
+                            </thead>
+                            <tbody id="adminLocationsTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h3>Monitorizar Integrações</h3>
+                        <p class="admin-card-subtitle">
+                            UC-23 — Estado das integrações com Geoapify, Open-Meteo e base de dados.
+                        </p>
+                    </div>
+
+                    <div id="adminIntegrationsBody" class="admin-integrations">
+                        <p class="muted">Clique em “Painel Admin” para verificar o estado das integrações.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="admin-column">
+                <div class="admin-card">
+                    <div class="admin-card-header">
+                        <h3>Gerir Utilizadores</h3>
+                        <p class="admin-card-subtitle">
+                            UC-18, UC-19, UC-20, UC-21, UC-22 — Criar, editar, listar e remover utilizadores.
+                        </p>
+                    </div>
+
+                    <form id="adminUserForm" class="admin-form" onsubmit="submitAdminUser(event)">
+                        <input type="hidden" id="adminUserId">
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="adminUserName">Nome *</label>
+                                <input type="text" id="adminUserName" required placeholder="Nome completo">
+                            </div>
+                            <div class="form-group">
+                                <label for="adminUserEmail">Email *</label>
+                                <input type="email" id="adminUserEmail" required placeholder="utilizador@exemplo.com">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="adminUserRole">Perfil / Role *</label>
+                                <select id="adminUserRole" required>
+                                    <option value="user">Utilizador</option>
+                                    <option value="admin">Administrador</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="adminUserPassword">Palavra-passe <span id="adminUserPasswordLabelExtra">(apenas para novos utilizadores)</span></label>
+                                <input type="password" id="adminUserPassword" placeholder="••••••••">
+                            </div>
+                        </div>
+
+                        <div class="admin-form-actions">
+                            <button type="submit" class="btn btn-primary" id="adminUserSaveBtn">
+                                Criar utilizador
+                            </button>
+                            <button type="button"
+                                    class="btn btn-outline hidden"
+                                    id="adminUserCancelEditBtn"
+                                    onclick="cancelAdminUserEdit()">
+                                Cancelar edição
+                            </button>
+                        </div>
+                    </form>
+
+                    <div class="table-wrapper">
+                        <table class="admin-table">
+                            <thead>
+                            <tr>
+                                <th scope="col">ID</th>
+                                <th scope="col">Nome</th>
+                                <th scope="col">Email</th>
+                                <th scope="col">Role</th>
+                                <th scope="col">Estado</th>
+                                <th scope="col">Ações</th>
+                            </tr>
+                            </thead>
+                            <tbody id="adminUsersTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="favoritesSection" class="hidden">
+        <h2 class="section-title">Favoritos</h2>
+        <p class="section-subtitle">
+            Pontos turísticos que marcou como favoritos para acesso rápido.
+        </p>
+        <div class="locations-grid" id="favoriteLocations"></div>
+    </section>
+
+    <section id="profileSection" class="hidden">
+        <h2 class="section-title">Meu Perfil</h2>
+
+        <div class="profile-card">
+            <div id="profileViewMode">
+                <div style="text-align: center; margin-bottom: 1.5rem;">
+                    <div class="user-avatar" style="width: 80px; height: 80px; font-size: 2rem; margin: 0 auto;">
+                        <span id="profileAvatarInitial">U</span>
+                    </div>
+                </div>
+
+                <h3 id="profileName" style="text-align: center; margin-bottom: 0.5rem;">-</h3>
+                <p id="profileEmail" style="text-align: center; color: var(--text-secondary); margin-bottom: 2rem;">-</p>
+
+                <div id="profileStatsPlaceholder"></div>
+
+                <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 2rem;">
+                    <button class="btn btn-outline" onclick="toggleEditProfile()">
+                        ✏️ Editar Perfil
+                    </button>
+                    <button class="btn btn-primary" onclick="logout()">
+                        Terminar Sessão
+                    </button>
+                </div>
+            </div>
+
+            <form id="profileEditForm" class="hidden" onsubmit="saveProfile(event)">
+                <h3 style="margin-bottom: 1.5rem;">Editar Dados</h3>
+
+                <div class="form-group">
+                    <label for="editProfileName">Nome</label>
+                    <input type="text" id="editProfileName" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="editProfileEmail">Email</label>
+                    <input type="email" id="editProfileEmail" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="editProfilePassword">Nova Palavra-passe <span class="muted" style="font-weight: normal; font-size: 0.8rem;">(deixe em branco para manter a atual)</span></label>
+                    <input type="password" id="editProfilePassword" placeholder="••••••••">
+                </div>
+
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button type="button" class="btn btn-outline" onclick="toggleEditProfile()">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary" style="flex: 1;">
+                        Guardar Alterações
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div id="profileFavorites"></div>
+        <div id="profileItineraries"></div>
+    </section>
+
+</div> <div class="modal" id="loginModal">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeModal('login')" aria-label="Fechar modal">×</button>
+        <h2 style="margin-bottom: 2rem;">Entrar</h2>
+        <form onsubmit="login(event)">
+            <div class="form-group">
+                <label for="loginEmail">Email</label>
+                <input type="email" id="loginEmail" required>
+            </div>
+            <div class="form-group">
+                <label for="loginPassword">Palavra-passe</label>
+                <input type="password" id="loginPassword" required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Entrar</button>
+        </form>
+    </div>
+</div>
+
+<div class="modal" id="registerModal">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeModal('register')" aria-label="Fechar modal">×</button>
+        <h2 style="margin-bottom: 2rem;">Registar</h2>
+        <form onsubmit="register(event)">
+            <div class="form-group">
+                <label for="registerName">Nome</label>
+                <input type="text" id="registerName" required>
+            </div>
+            <div class="form-group">
+                <label for="registerEmail">Email</label>
+                <input type="email" id="registerEmail" required>
+            </div>
+            <div class="form-group">
+                <label for="registerPassword">Palavra-passe</label>
+                <input type="password" id="registerPassword" required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Registar</button>
+        </form>
+    </div>
+</div>
+
+<div class="modal" id="locationModal">
+    <div class="modal-content modal-lg">
+        <button class="modal-close" onclick="closeLocationModal()" aria-label="Fechar modal">×</button>
+        <div id="locationModalContent">
+        </div>
+    </div>
+</div>
+
+<footer>
+    <div class="footer-content">
+        <div class="footer-section">
+            <h3>Azores Uncharted</h3>
+            <p>Descubra o paraíso natural dos Açores através das nove ilhas únicas que compõem este arquipélago extraordinário.</p>
+        </div>
+        <div class="footer-section">
+            <h3>Links Rápidos</h3>
+            <ul>
+                <li><a onclick="showSection('home')">Início</a></li>
+                <li><a onclick="showSection('islands')">Ilhas</a></li>
+                <li><a onclick="showSection('locations')">Locais</a></li>
+                <li><a onclick="openModal('register')">Registar</a></li>
+            </ul>
+        </div>
+        <div class="footer-section">
+            <h3>Contacto</h3>
+            <p>Email: info@azores_uncharted.pt</p>
+            <p>Tel: +351 295 000 000</p>
+            <p>Ponta Delgada, São Miguel</p>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <p>&copy; 2025 Azores Uncharted. Todos os direitos reservados.</p>
+    </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<div class="scroll-quick-actions">
+    <button
+            class="scroll-btn scroll-btn-main"
+            type="button"
+            onclick="window.scrollTo({ top: 0, behavior: 'smooth' });"
+            title="Voltar ao topo"
+            aria-label="Voltar ao topo"
+    >
+        ↑
+    </button>
+
+    <button
+            class="scroll-btn"
+            type="button"
+            onclick="showSection('locations'); window.scrollTo({ top: 0, behavior: 'smooth' });"
+            title="Ir para Locais"
+            aria-label="Ir para Locais"
+    >
+        🗺
+    </button>
+
+    <button
+            class="scroll-btn"
+            type="button"
+            onclick="showSection('favorites'); window.scrollTo({ top: 0, behavior: 'smooth' });"
+            title="Ir para Favoritos"
+            aria-label="Ir para Favoritos"
+    >
+        ❤
+    </button>
+
+    <button
+            class="scroll-btn"
+            type="button"
+            onclick="showSection('itineraries'); window.scrollTo({ top: 0, behavior: 'smooth' });"
+            title="Ir para Itinerários"
+            aria-label="Ir para Itinerários"
+    >
+        ✈
+    </button>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
