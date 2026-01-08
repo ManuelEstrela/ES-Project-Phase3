@@ -1,6 +1,6 @@
-================================================================================
+=
 ACESSO RÁPIDO
-================================================================================
+=
 
 Aplicação Online: https://manuelestrela.github.io/ES-Project-Phase3/
 
@@ -8,9 +8,9 @@ Credenciais de Teste:
 - Email: miguelsilva@gmail.com
 - Password: password123
 
-================================================================================
+=
 O QUE É ESTE PROJETO?
-================================================================================
+=
 
 Uma aplicação web para explorar os Açores que permite:
 - Ver locais turísticos das 9 ilhas
@@ -20,9 +20,9 @@ Uma aplicação web para explorar os Açores que permite:
 - Guardar favoritos
 - Exportar itinerários para PDF
 
-================================================================================
+=
 ARQUITETURA
-================================================================================
+=
 
 5 APIs desenvolvidas em MuleSoft:
 
